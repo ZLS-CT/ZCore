@@ -1,10 +1,15 @@
 import * as ZRenderLib from "../ZRenderLib/index"
 
-const FileInputStream1 = Java.type("java.io.FileInputStream")
-const Files1 = Java.type("java.nio.file.Files")
-const File1 = Java.type("java.io.File")
-const FileOutputStream1 = Java.type("java.io.FileOutputStream")
-const Paths1 = Java.type("java.nio.file.Paths")
+export const GetJavaClass = (className) => {
+    return Java.type(className)
+}
+
+const FileInputStream1 = GetJavaClass("java.io.FileInputStream")
+const Files1 = GetJavaClass("java.nio.file.Files")
+const File1 = GetJavaClass("java.io.File")
+const FileOutputStream1 = GetJavaClass("java.io.FileOutputStream")
+const Paths1 = GetJavaClass("java.nio.file.Paths")
+
 
 export const versionToInt = (version) => {
     const [major, minor, patch] = version.split(".").map(Number)
@@ -14,7 +19,7 @@ export const versionToInt = (version) => {
 }
 
 const mc = Client.getMinecraft()
-const ForgeVersion = Java.type("net.minecraftforge.common.ForgeVersion")
+const ForgeVersion = GetJavaClass("net.minecraftforge.common.ForgeVersion")
 let _gameVersion = Client.getVersion()
 if (Object.keys(ForgeVersion).length > 0) {
     _gameVersion = ForgeVersion.mcVersion
@@ -28,10 +33,10 @@ export const modulesFolder = (isLegacy) ? Config.modulesFolder : ChatTriggers.MO
 let Loader1 = null
 let DataComponentTypes1 = null
 if (isLegacy) {
-    Loader1 = Utils.GetJavaClass("net.minecraftforge.fml.common.Loader")
+    Loader1 = GetJavaClass("net.minecraftforge.fml.common.Loader")
 } else {
-    Loader1 = Java.type("net.fabricmc.loader.api.FabricLoader")
-    DataComponentTypes1 = Java.type("net.minecraft.component.DataComponentTypes")
+    Loader1 = GetJavaClass("net.fabricmc.loader.api.FabricLoader")
+    DataComponentTypes1 = GetJavaClass("net.minecraft.component.DataComponentTypes")
 }
 
 function rejectJavaObjects(key, value) {
@@ -1505,9 +1510,6 @@ export const modernitemIDToRegistryNameMap = {
 
 export const GetModernitemIDRegistryName = (itemID) => {
     return modernitemIDToRegistryNameMap[itemID] || "minecraft:air"
-}
-export const GetJavaClass = (className) => {
-    return Java.type(className)
 }
 
 export const FixRenderItemIntoSlotRenderValues = (drawContext, originalItem, x, y, z) => {
