@@ -615,6 +615,41 @@ export const DeleteLockedFile = (filePathString) => {
     return false
 }
 
+export const CopyFolderRecursive = (source, destination, exclusions = []) => {
+    const sourcePath = Paths1.get(source).normalize()
+    const destinationPath = Paths1.get(destination).normalize()
+
+    if (!Files1.exists(sourcePath)) return
+
+    Files1.walk(sourcePath).forEach((file) => {
+        if (exclusions.some((exclusion) => file.startsWith(exclusion))) return
+
+        const relativePath = sourcePath.relativize(file)
+        const destFile = destinationPath.resolve(relativePath)
+
+        if (Files1.isDirectory(file)) {
+            Files1.createDirectories(destFile)
+        } else {
+            Files1.copy(file, destFile)
+        }
+    })
+}
+
+export const DeleteFolderRecursive = (folderPathString) => {
+    const folderPath = Paths1.get(folderPathString).normalize()
+    const folder = new File1(folderPath.toString())
+
+    if (folder.exists()) {
+        folder.listFiles().forEach((file) => {
+            if (file.isDirectory()) {
+                DeleteFolderRecursive(file.getPath())
+            }
+            file.delete()
+        })
+        folder.delete()
+    }
+}
+
 export const SplitStringOrTextComponentByNewline = (text) => {
     let lineU = GetUnformattedStringOrTextComponent(text).trim()
     if (lineU == "") {
