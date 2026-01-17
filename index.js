@@ -1552,19 +1552,52 @@ export const getInstalledModList = () => {
     return modList
 }
 
-const delayedCallbacks = {}
-export const StartDelayedCallback = (delayID, delayMs, callback) => {
-    const isScheduled = delayedCallbacks.hasOwnProperty(delayID)
-    delayedCallbacks[delayID] = Date.now()
-    if (isScheduled) return
+const delayedCallbacks = Object.create(null)
+register("step", () => {
+    const now = Date.now()
+    for (const id in delayedCallbacks) {
+        let entry = delayedCallbacks[id]
+        if (!entry || !entry.active) continue
 
-    const stepRegister = register("step", () => {
-        if (Date.now() - delayedCallbacks[delayID] >= delayMs) {
-            callback()
-            delete delayedCallbacks[delayID]
-            stepRegister.unregister()
+        if (now - entry.start >= entry.delay) {
+            entry.active = false
+            try {
+                entry.callback()
+            } catch (e) {
+                console.error(`DelayedCallback ${id} failed`, e)
+            }
+            delete delayedCallbacks[id]
         }
-    }).setFps(20)
+    }
+}).setFps(20)
+
+export const StartDelayedCallback = (id, delayMs, callback) => {
+    const entry = delayedCallbacks[id]
+    const now = Date.now()
+    if (entry) {
+        entry.start = now
+        entry.delay = delayMs
+        entry.callback = callback
+        entry.active = true
+        return
+    }
+
+    delayedCallbacks[id] = {
+        start: now,
+        delay: delayMs,
+        callback,
+        active: true,
+    }
+}
+export const DelayedCallbackExists = (id) => {
+    const entry = delayedCallbacks[id]
+    return !!(entry && entry.active)
+}
+export const DeleteDelayedCallback = (id) => {
+    const entry = delayedCallbacks[id]
+    if (!entry) return false
+    delete delayedCallbacks[id]
+    return true
 }
 
 export const GetExtendedColorString = (hexCode) => {
