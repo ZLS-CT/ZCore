@@ -1816,6 +1816,12 @@ export class LRUCacheMap {
             this.cache.delete(firstKey)
         }
     }
+    clear() {
+        this.cache.clear()
+    }
+    size() {
+        return this.cache.size
+    }
 }
 export class LRUCacheList {
     constructor(capacity) {
@@ -1845,6 +1851,12 @@ export class LRUCacheList {
         if (this.cache.size > this.capacity) {
             this.cache.delete(this.getFirst())
         }
+    }
+    clear() {
+        this.cache.clear()
+    }
+    size() {
+        return this.cache.size
     }
 }
 
