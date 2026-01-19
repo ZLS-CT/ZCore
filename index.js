@@ -782,16 +782,13 @@ export const tagContainsKey = (nbtCompound, key, type = null) => {
         if (type != null) {
             return nbtCompound.func_150297_b/*hasKey*/(key, type)
         }
-        return nbtCompound.func_150297_b/*hasKey*/(key)
+        return nbtCompound.func_74764_b/*hasKey*/(key)
     }
     return nbtCompound.contains(key)
 }
-export const getTagList = (nbtCompound, key, type = null) => {
+export const getTagList = (nbtCompound, key, type) => {
     if (isLegacy) {
-        if (type != null) {
-            return nbtCompound.func_150295_c/*getTagList*/(key, type)
-        }
-        return nbtCompound.func_150295_c/*getTagList*/(key)
+        return nbtCompound.func_150295_c/*getTagList*/(key, type)
     }
     return nbtCompound.getList(key).orElse(null)
 }
@@ -892,7 +889,7 @@ export const getItemStackLore = (itemStack, formatted = true) => {
 
 export const isDyeableLeatherArmor = (itemStack) => {
     if (isLegacy) {
-        let registryName = itemStack.func_77973_b().registryName
+        let registryName = getItemStack(itemStack).func_77973_b().registryName
         return (
             registryName == "minecraft:leather_helmet" ||
             registryName == "minecraft:leather_chestplate" ||
@@ -908,7 +905,8 @@ export const isDyeableLeatherArmor = (itemStack) => {
     )
 }
 export const getItemStackNBTObject = (itemStack) => {
-    if (itemStack == null || itemStack.isEmpty()) return null
+    if (itemStack == null) return null
+    if (!isLegacy && itemStack.isEmpty()) return null
     let finalObject = {}
     let itemID = null
     let customNBT = null
@@ -917,7 +915,7 @@ export const getItemStackNBTObject = (itemStack) => {
     let dyedColorInt = null
 
     if (isLegacy) {
-        return convertNBTToNBTObject(itemStack.func_77978_p/*getTagCompound*/())
+        return convertNBTToNBTObject(getItemStack(itemStack).func_77978_p/*getTagCompound*/())
     }
     itemID = getItemStackRegistryName(itemStack)
 
@@ -950,6 +948,7 @@ export const getItemStackNBTObject = (itemStack) => {
     return finalObject
 }
 export const convertNBTToNBTObject = (itemNBT) => {
+    if (itemNBT == null) return null
     let finalObject = {}
     let itemID = null
     let customNBT = null
@@ -975,7 +974,8 @@ export const convertNBTToNBTObject = (itemNBT) => {
             const itemLore = getTagList(displayTag, "Lore", 8)
             const loreCount = getTagListCount(itemLore)
             for (let i = 0; i < loreCount; i++) {
-                const loreLine = getStringTag(itemLore, i)
+                // !! changed from "" to At in legacy
+                const loreLine = getStringTagAt(itemLore, i)
                 loreLines.push(loreLine)
             }
         }
@@ -1014,7 +1014,7 @@ export const getItemStack = (item) => {
 
 export const getItemStackRegistryName = (itemStack) => {
     if (isLegacy) {
-        return itemStack.func_77973_b().registryName
+        return getItemStack(itemStack).func_77973_b().registryName
     }
     return itemStack.getItem().toString() || "minecraft:air"
 }
@@ -1551,8 +1551,8 @@ export const FixRenderItemIntoSlotRenderValues = (drawContext, originalItem, x, 
     if (isLegacy) {
         return [
             null, // drawContext
-            drawContext, // item
-            originalItem?.itemStack, // x
+            drawContext?.itemStack, // item
+            originalItem, // x
             x, // y
             0, // z
         ]
