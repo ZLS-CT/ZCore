@@ -667,7 +667,7 @@ export const SplitStringOrTextComponentByNewline = (text) => {
         // return list
     } else if (text instanceof ZTextComponent) {
         const list = []
-        ZRenderLib.splitText(text.build(), 512).lines.forEach((line) => {
+        ZRenderLib.splitText(text.build(true), 512).lines.forEach((line) => {
             list.push(new ZTextComponent().withTextComponent(new TextComponent(line)))
         })
         return list
@@ -876,7 +876,17 @@ export const setItemStackName = (itemStack, name) => {
 }
 export const getItemStackLore = (itemStack, formatted = true) => {
     if (isLegacy) {
-        return getCustomDataNBT(itemStack).func_74775_l("display").func_150295_c("Lore", 8)
+        const loreLines = []
+        const itemLore = getCustomDataNBT(itemStack).func_74775_l("display").func_150295_c("Lore", 8)
+        const loreCount = getTagListCount(itemLore)
+        for (let i = 0; i < loreCount; i++) {
+            let loreLine = getStringTagAt(itemLore, i)
+            if (!formatted) {
+                loreLine = ChatLib.removeFormatting(loreLine).toLowerCase()
+            }
+            loreLines.push(loreLine)
+        }
+        return loreLines
     }
     const loreComponent = itemStack.get(DataComponentTypes1.LORE)
     return new ArrayList(loreComponent?.lines() || []).map(line => {
@@ -886,10 +896,28 @@ export const getItemStackLore = (itemStack, formatted = true) => {
         return new TextComponent(line).unformattedText.toLowerCase()
     })
 }
-
-export const isDyeableLeatherArmor = (itemStack) => {
+export const getCustomDataNBT = (item) => {
     if (isLegacy) {
-        let registryName = getItemStack(itemStack).func_77973_b().registryName
+        const itemStack = getItemStack(item)
+        return legacyGetOrCreateCustomNBT(itemStack)
+    }
+    const customDataComponent = item.get(DataComponentTypes1.CUSTOM_DATA)
+    return customDataComponent ? customDataComponent.nbt : NBTComponent.DEFAULT.nbt.copy()
+}
+
+export const legacyGetOrCreateCustomNBT = (itemStack) => {
+    let nbt = itemStack.func_77978_p()
+    if (nbt == null) {
+        nbt = new net.minecraft.nbt.NBTTagCompound()
+        itemStack.func_77982_d(nbt)
+    }
+    return nbt
+}
+
+export const isDyeableLeatherArmor = (item) => {
+    if (isLegacy) {
+        const itemStack = getItemStack(item)
+        const registryName = itemStack.func_77973_b().registryName
         return (
             registryName == "minecraft:leather_helmet" ||
             registryName == "minecraft:leather_chestplate" ||
@@ -898,10 +926,10 @@ export const isDyeableLeatherArmor = (itemStack) => {
         )
     }
     return (
-        itemStack.isOf(net.minecraft.item.Items.LEATHER_HELMET) ||
-        itemStack.isOf(net.minecraft.item.Items.LEATHER_CHESTPLATE) ||
-        itemStack.isOf(net.minecraft.item.Items.LEATHER_LEGGINGS) ||
-        itemStack.isOf(net.minecraft.item.Items.LEATHER_BOOTS)
+        item.isOf(net.minecraft.item.Items.LEATHER_HELMET) ||
+        item.isOf(net.minecraft.item.Items.LEATHER_CHESTPLATE) ||
+        item.isOf(net.minecraft.item.Items.LEATHER_LEGGINGS) ||
+        item.isOf(net.minecraft.item.Items.LEATHER_BOOTS)
     )
 }
 export const getItemStackNBTObject = (itemStack) => {
@@ -915,7 +943,7 @@ export const getItemStackNBTObject = (itemStack) => {
     let dyedColorInt = null
 
     if (isLegacy) {
-        return convertNBTToNBTObject(getItemStack(itemStack).func_77978_p/*getTagCompound*/())
+        return convertNBTToNBTObject(getCustomDataNBT(itemStack))
     }
     itemID = getItemStackRegistryName(itemStack)
 
@@ -1729,22 +1757,30 @@ export class ZTextComponent {
         return this
     }
 
-    build() {
+    build(legacyOutputString = true) {
         try {
             if (isLegacy) {
-                const textList = []
-                this.textComponentList.forEach(component => {
-                    let text = (component.color) ? GetExtendedColorString(component.color).replace(component.color, component.text) : component.text
-                    let textComponent = new TextComponent(text)
+                const textList = this.textComponentList.map(component => {
+                    let text = component.color
+                        ? GetExtendedColorString(component.color).replace(component.color, component.text)
+                        : component.text
+
+                    const textComponent = new TextComponent(text)
                     if (component.clickEvent) {
                         textComponent.setClick(component.clickEvent.action, component.clickEvent.value)
                     }
                     if (component.hoverEvent) {
                         textComponent.setHover(component.hoverEvent.action, component.hoverEvent.value)
                     }
-                    textList.push(textComponent)
+
+                    return textComponent
                 })
-                return new Message(textList)
+
+                const message = new Message(textList)
+                if (legacyOutputString) {
+                    return message.getFormattedText()
+                }
+                return message
             }
 
             let textComponent = new TextComponent("")
@@ -1771,21 +1807,24 @@ export class ZTextComponent {
     }
 
     getUnformattedText() {
-        let build = this.build()
+        const build = this.build(false)
         if (isLegacy) {
-            return ChatLib.removeFormatting(build)
+            return build.getUnformattedText()
         }
         return build.unformattedText
     }
     getFormattedText() {
-        let build = this.build()
+        let build = this.build(false)
         if (isLegacy) {
-            return build
+            return build.getFormattedText()
         }
         return build.formattedText
     }
     isEmpty() {
         return this.textComponentList.length == 0
+    }
+    chat() {
+        return this.build(false)?.chat()
     }
 }
 
