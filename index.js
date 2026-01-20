@@ -10,7 +10,6 @@ const File1 = GetJavaClass("java.io.File")
 const FileOutputStream1 = GetJavaClass("java.io.FileOutputStream")
 const Paths1 = GetJavaClass("java.nio.file.Paths")
 
-
 export const versionToInt = (version) => {
     const [major, minor, patch] = version.split(".").map(Number)
     return Number(
