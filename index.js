@@ -1927,3 +1927,68 @@ export class DataObject {
         register("gameUnload", () => this.save())
     }
 }
+
+export const helmetNames = new Set(
+    "hat",
+    "helmet",
+    "mask",
+    "crown",
+    "head",
+    "heart",
+    "fedora",
+    "goggles",
+    "cap",
+    "tophat",
+    "velvet_top_hat",
+    "leather cap",
+    "leather helmet",
+    "leather_helmet",
+    "minecraft:leather_helmet",
+)
+export const chestplateNames = new Set(
+    "chest",
+    "chestplate",
+    "jacket",
+    "tunic",
+    "shirt",
+    "cashmere_jacket",
+    "leather tunic",
+    "leather chestplate",
+    "leather_chestplate",
+    "minecraft:leather_chestplate",
+)
+export const leggingsNames = new Set(
+    "leggings",
+    "pants",
+    "trousers",
+    "legs",
+    "legging",
+    "leg",
+    "satin_trousers",
+    "leather trousers",
+    "leather pants",
+    "leather leggings",
+    "leather_leggings",
+    "minecraft:leather_leggings",
+)
+export const bootsNames = new Set(
+    "boots",
+    "shoes",
+    "shoe",
+    "boot",
+    "oxford_shoes",
+    "leather shoes",
+    "leather boots",
+    "leather_boots",
+    "minecraft:leather_boots",
+)
+
+export const GetArmorType = (itemName) => {
+    if (isNullOrUndefined(itemName)) return null
+    itemName = ChatLib.removeFormatting(itemName).toLowerCase().trim()
+    if (Constants.helmetNames.has(itemName)) return "helmet"
+    if (Constants.chestplateNames.has(itemName)) return "chestplate"
+    if (Constants.leggingsNames.has(itemName)) return "leggings"
+    if (Constants.bootsNames.has(itemName)) return "boots"
+    return null
+}
