@@ -148,6 +148,9 @@ export const ReturnZeroIfNaN = (oldNumber) => {
     return (isNaN(oldNumber)) ? 0 : oldNumber
 }
 
+export const TimestampFormat = (timestamp) => {
+    return DateFormat(new Date(timestamp))
+}
 // Month Day Hour:Minute PM/AM
 export const DateFormat = (date) => {
     const isPM = date.getHours() >= 12
