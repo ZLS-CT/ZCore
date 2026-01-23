@@ -1931,7 +1931,7 @@ export class DataObject {
     }
 }
 
-export const helmetNames = new Set(
+export const helmetNames = new Set([
     "hat",
     "helmet",
     "mask",
@@ -1947,8 +1947,8 @@ export const helmetNames = new Set(
     "leather helmet",
     "leather_helmet",
     "minecraft:leather_helmet",
-)
-export const chestplateNames = new Set(
+])
+export const chestplateNames = new Set([
     "chest",
     "chestplate",
     "jacket",
@@ -1959,8 +1959,8 @@ export const chestplateNames = new Set(
     "leather chestplate",
     "leather_chestplate",
     "minecraft:leather_chestplate",
-)
-export const leggingsNames = new Set(
+])
+export const leggingsNames = new Set([
     "leggings",
     "pants",
     "trousers",
@@ -1973,8 +1973,8 @@ export const leggingsNames = new Set(
     "leather leggings",
     "leather_leggings",
     "minecraft:leather_leggings",
-)
-export const bootsNames = new Set(
+])
+export const bootsNames = new Set([
     "boots",
     "shoes",
     "shoe",
@@ -1984,14 +1984,14 @@ export const bootsNames = new Set(
     "leather boots",
     "leather_boots",
     "minecraft:leather_boots",
-)
+])
 
 export const GetArmorType = (itemName) => {
     if (isNullOrUndefined(itemName)) return null
     itemName = ChatLib.removeFormatting(itemName).toLowerCase().trim()
-    if (Constants.helmetNames.has(itemName)) return "helmet"
-    if (Constants.chestplateNames.has(itemName)) return "chestplate"
-    if (Constants.leggingsNames.has(itemName)) return "leggings"
-    if (Constants.bootsNames.has(itemName)) return "boots"
+    if (helmetNames.has(itemName)) return "helmet"
+    if (chestplateNames.has(itemName)) return "chestplate"
+    if (leggingsNames.has(itemName)) return "leggings"
+    if (bootsNames.has(itemName)) return "boots"
     return null
 }
