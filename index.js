@@ -1995,3 +1995,24 @@ export const GetArmorType = (itemName) => {
     if (bootsNames.has(itemName)) return "boots"
     return null
 }
+
+export const buildModernCommand = (commandName, commandBody, aliases = []) => {
+    const commandNode = Commands.buildCommand(commandName, commandBody)
+    commandNode.register()
+    aliases.forEach(alias => {
+        Commands.buildCommand(alias, () => {
+            Commands.redirect(commandNode)
+        }).register()
+    })
+}
+
+export const registerNewCommand = (commandName, legacyBody, modernBody, aliases = []) => {
+    if (isLegacy) {
+        register("command", (...args) => {
+            legacyBody(...args)
+        }).setName(commandName).setAliases(aliases)
+        return
+    }
+    buildModernCommand(commandName, modernBody, aliases)
+}
+
