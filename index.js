@@ -2018,3 +2018,43 @@ export const registerNewCommand = (commandName, legacyBody, modernBody, aliases 
     buildModernCommand(commandName, modernBody, aliases)
 }
 
+const { literal: cLiteral, argument: cArgument, string: cString, exec: cExec, bool: cBool, integer: cInteger } = Commands
+export const createCommandLiteral = (commands, subcommandName) => {
+    const cmd = commands[subcommandName]
+    cLiteral(subcommandName, () => {
+        if (cmd.args.length == 0) {
+            cExec(() => {
+                cmd.handler()
+            })
+            return
+        }
+
+        cmd.args.forEach((arg) => {
+            cArgument(arg.name, arg.type(), () => {
+                cExec((context) => {
+                    cmd.handler(context[arg.name])
+                })
+            })
+        })
+    })
+}
+export const createCommandHandler = (commands, subcommand, ...args) => {
+    if (isLegacy) {
+        subcommand = args ? args[0] : null
+    }
+    if (!subcommand) {
+        if (commands.hasOwnProperty("_defaultNoInput")) {
+            commands._defaultNoInput.handler()
+        }
+        return
+    }
+
+    const cmd = commands[subcommand]
+    if (cmd) {
+        cmd.handler(...args)
+        return
+    }
+    if (!commands.hasOwnProperty("_defaultWithInput")) return
+    commands._defaultWithInput.handler(...args)
+}
+
