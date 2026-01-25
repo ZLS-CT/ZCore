@@ -1798,12 +1798,14 @@ export class ZTextComponent {
                     }
                     textComponent = textComponent.withText(component)
                 } catch (e) {
-                    ChatDebug(`ZTextComponent add component error:`, e, e.stack, safeStringify(component), typeof component.text)
+                    ChatMessage("ZTextComponent add component error:", e)
+                    console.log(`ZTextComponent add component error: ${e} | ${e.stack}`)
                 }
             })
             return textComponent
         } catch (e) {
-            ChatDebug("ZTextComponent build error:", e, e.stack)
+            ChatMessage("ZTextComponent build error:", e)
+            console.log(`ZTextComponent build error: ${e} | ${e.stack}`)
         }
         return null
     }
