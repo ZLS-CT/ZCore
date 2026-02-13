@@ -9,6 +9,7 @@ const Files1 = GetJavaClass("java.nio.file.Files")
 const File1 = GetJavaClass("java.io.File")
 const FileOutputStream1 = GetJavaClass("java.io.FileOutputStream")
 const Paths1 = GetJavaClass("java.nio.file.Paths")
+const String1 = GetJavaClass("java.lang.String")
 
 export const versionToInt = (version) => {
     const [major, minor, patch] = version.split(".").map(Number)
@@ -142,6 +143,15 @@ export const base64Decode = (str, loop = 1) => {
 }
 export const base64Encode = (str) => {
     return java.util.Base64.getEncoder().encodeToString(new java.lang.String(str).getBytes())
+}
+export const numberToByte = (n) => {
+    return n > 127 ? n - 256 : n
+}
+export const stringToBytes = (str) => {
+    return new String1(str).getBytes("UTF-8")
+}
+export const bytesToString = (bytes, offset, length) => {
+    return new String1(bytes, offset, length, "UTF-8").toString()
 }
 
 export const ReturnZeroIfNaN = (oldNumber) => {
