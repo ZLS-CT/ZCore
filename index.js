@@ -1699,6 +1699,26 @@ export class ZTextComponent {
         return this.textComponentList
     }
 
+    trim() {
+        while (this.textComponentList.length > 0) {
+            const first = this.textComponentList[0]
+            const text = first.text || (first instanceof TextComponent ? first.getText() : "")
+
+            if (!(text == null || text.trim() === "")) break
+            this.textComponentList.shift()
+        }
+
+        while (this.textComponentList.length > 0) {
+            const last = this.textComponentList[this.textComponentList.length - 1]
+            const text = last.text || (last instanceof TextComponent ? last.getText() : "")
+
+            if (!(text == null || text.trim() == "")) break
+            this.textComponentList.pop()
+        }
+
+        return this
+    }
+
     withText(...args) { return this.addText(...args) }
     addText(text, color = null, clickEvent = null, hoverEvent = null) {
         if (typeof text == "string") {
