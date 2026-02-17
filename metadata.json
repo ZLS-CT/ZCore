@@ -2,5 +2,8 @@
     "name": "ZCore",
     "description": "Utility module. Supports 1.8.9 and 1.21.x.",
     "author": "Zephy (Nvidia2080Ti)",
+    "requires": [
+        "ZRequest"
+    ],
     "version": "1.0.0"
 }

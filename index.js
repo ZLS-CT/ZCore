@@ -1,4 +1,5 @@
 import * as ZRenderLib from "../ZRenderLib/index"
+import { fetch } from "../ZRequest/fetch"
 
 export const GetJavaClass = (className) => {
     return Java.type(className)
@@ -2090,7 +2091,7 @@ export const createCommandHandler = (commands, subcommand, ...args) => {
 
 export class UpdatingFile {
     constructor(moduleName, fileKey, filePath, fileName, downloadURL) {
-        this.moduleName
+        this.moduleName = moduleName
         this.fileKey = fileKey
         this.filePath = filePath
         this.fileName = fileName
@@ -2127,7 +2128,7 @@ export class UpdatingFile {
                 callback(JSON.parse(`${FileLib.read(fullPath)}`))
                 return
             } catch (e) {
-                if (Constants.debug) Utils.ChatDebug(`&cError preloading ${this.fileName}:`, e, e.stack)
+                Utils.ChatDebug(`&cError preloading ${this.fileName}:`, e, e.stack)
             }
         }
         callback(null)
@@ -2139,7 +2140,10 @@ export class UpdatingFile {
         }
 
         fetch(this.downloadURL, {
-            headers: Constants.defaultHeaders,
+            headers: {
+                "User-Agent": "Mozilla/5.0 (ChatTriggers)",
+                "Content-Type": "application/json"
+            },
             json: true,
             timeout: 5000,
         })
