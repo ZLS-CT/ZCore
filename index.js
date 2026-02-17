@@ -1100,11 +1100,11 @@ export const GetNormalizedNewLines = (baseText) => {
     return "\n\n"
 }
 
-export const DrawItemOverlayRectangleRGBA = (drawContext, x, y, z, r, g, b, a) => {
-    ZRenderLib.drawRectRGBA(drawContext, x, y, 16, 16, r, g, b, a, z)
+export const DrawItemOverlayRectangle = (drawContext, x, y, z, colorList) => {
+    ZRenderLib.drawRect(drawContext, x, y, 16, 16, colorList, z)
 }
 export const DrawItemOverlayRectangleJavaColor = (drawContext, x, y, z, javaColor) => {
-    DrawItemOverlayRectangleRGBA(drawContext, x, y, z, javaColor.getRed(), javaColor.getGreen(), javaColor.getBlue(), javaColor.getAlpha())
+    DrawItemOverlayRectangle(drawContext, x, y, z, [javaColor.getRed(), javaColor.getGreen(), javaColor.getBlue(), javaColor.getAlpha()])
 }
 
 export const modernEntityClassNameMap = {
