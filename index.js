@@ -1,4 +1,5 @@
 import * as ZRenderLib from "../ZRenderLib/index"
+import { fetch } from "../ZRequest/fetch"
 
 export const GetJavaClass = (className) => {
     return Java.type(className)
@@ -1042,11 +1043,11 @@ export const GetNormalizedNewLines = (baseText) => {
     return "\n\n"
 }
 
-export const DrawItemOverlayRectangleRGBA = (drawContext, x, y, z, r, g, b, a) => {
-    ZRenderLib.drawRectRGBA(drawContext, x, y, 16, 16, r, g, b, a, z)
+export const DrawItemOverlayRectangle = (drawContext, x, y, z, colorList) => {
+    ZRenderLib.drawRect(drawContext, x, y, 16, 16, colorList, z)
 }
 export const DrawItemOverlayRectangleJavaColor = (drawContext, x, y, z, javaColor) => {
-    DrawItemOverlayRectangleRGBA(drawContext, x, y, z, javaColor.getRed(), javaColor.getGreen(), javaColor.getBlue(), javaColor.getAlpha())
+    DrawItemOverlayRectangle(drawContext, x, y, z, [javaColor.getRed(), javaColor.getGreen(), javaColor.getBlue(), javaColor.getAlpha()])
 }
 
 export const modernEntityClassNameMap = {
@@ -2028,6 +2029,97 @@ export const createCommandHandler = (commands, subcommand, ...args) => {
     }
     if (!commands.hasOwnProperty("_defaultWithInput")) return
     commands._defaultWithInput.handler(...args)
+}
+
+export class UpdatingFile {
+    constructor(moduleName, fileKey, filePath, fileName, downloadURL) {
+        this.moduleName = moduleName
+        this.fileKey = fileKey
+        this.filePath = filePath
+        this.fileName = fileName
+        this.downloadURL = downloadURL
+    }
+
+    normalizeFilePath() {
+        return this.filePath.replace(/^[/\\]+|[/\\]+$/g, "")
+    }
+    getOutputFolder() {
+        return java.nio.file.Paths.get(modulesFolder, this.moduleName, this.normalizeFilePath()).toFile()
+    }
+    getFullFilePath() {
+        const filePath = java.nio.file.Paths.get(this.getOutputFolder().getAbsolutePath(), this.fileName)
+        return filePath.toString()
+    }
+
+    readFile() {
+        try {
+            let filePath = this.getFullFilePath()
+            const file = new File1(filePath)
+            if (!file.exists()) return null
+            return JSON.parse(FileLib.read(filePath))
+        } catch (e) {
+            Utils.ChatDebug(`Error in Read${this.fileName}:`, e, e.stack)
+        }
+        return null
+    }
+
+    preloadData(callback) {
+        const fullPath = this.getFullFilePath()
+        if (FileLib.exists(fullPath)) {
+            try {
+                callback(JSON.parse(`${FileLib.read(fullPath)}`))
+                return
+            } catch (e) {
+                Utils.ChatDebug(`&cError preloading ${this.fileName}:`, e, e.stack)
+            }
+        }
+        callback(null)
+    }
+
+    downloadFile(shouldPreload, currentFileVersion, callback) {
+        if (shouldPreload) {
+            this.preloadData(callback)
+        }
+
+        fetch(this.downloadURL, {
+            headers: {
+                "User-Agent": "Mozilla/5.0 (ChatTriggers)",
+                "Content-Type": "application/json"
+            },
+            json: true,
+            timeout: 5000,
+        })
+        .then(response => {
+            if (!response || !response["success"]) {
+                Utils.ChatDebug(`Error #1 in Download${this.fileName}:`, JSON.stringify(response))
+                // callback(null)
+                return
+            }
+
+            const outputFolder = this.getOutputFolder()
+            if (!outputFolder.exists() && !outputFolder.mkdirs()) {
+                Utils.ChatDebug(`Failed to create directory: ${outputFolder.getAbsolutePath()}`)
+            }
+
+            const fullPath = this.getFullFilePath()
+            const newDownloadedVersion = response["version"] || 0
+            if (newDownloadedVersion <= currentFileVersion && FileLib.exists(fullPath)) {
+                Utils.ChatDebug(`No new ${this.fileName} version available. Current: v${currentFileVersion}, New version: v${newDownloadedVersion}`)
+                callback(this.readFile(), null)
+                return
+            }
+
+            this.setInstalledFileVersion(newDownloadedVersion)
+            Utils.ChatDebug(`New ${this.fileName} version available: ${currentFileVersion} -> ${newDownloadedVersion}. Updating...`)
+
+            FileLib.write(fullPath, JSON.stringify(JSON.parse(response["body"]), null, 4))
+            Utils.ChatDebug(`Successfully updated ${this.fileName} to version v${newDownloadedVersion}.`)
+            callback(this.readFile(), newDownloadedVersion)
+        })
+        .catch(e => {
+            Utils.ChatDebug(`Error #2 in Download${this.fileName}:`, e, e.stack)
+        })
+    }
 }
 
 export const GetTextWithBackgroundData = (textList, colorList) => {
