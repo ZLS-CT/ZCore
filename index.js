@@ -2185,7 +2185,7 @@ export const RegisterNotification = (notificationKey, textList, options = {}) =>
         zOffset: options.zOffset || 0,
         heightOffset: options.heightOffset || 0,
         widthOffset: options.widthOffset || 0,
-        scale: options.scale || 1,
+        scale: options.scale || 1.5,
         priority: options.priority || 0,
         cachedData: null,
     }
@@ -2226,7 +2226,7 @@ export const SetCachedNotificationData = (notificationKey, notificationData) => 
         height: textWithBackgroundData.height + notificationData.heightOffset,
         builtTextComponent: textWithBackgroundData.zTextComponent.build(),
         backgroundColorList: textWithBackgroundData.backgroundColorList,
-        endingTime: endingTime,
+        scale: notificationData.scale,
     }
     registeredNotifications[notificationKey].cachedData = cachedData
     return cachedData
