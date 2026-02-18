@@ -2197,9 +2197,17 @@ export const RegisterNotification = (notificationKey, textList, options = {}) =>
 export const IsNotificationRegistered = (notificationKey) => {
     return !!registeredNotifications[notificationKey]
 }
-export const UpdateNotificationDataText = (notificationKey, newTextList) => {
+export const UpdateNotificationData = (notificationKey, newTextList, newOptions = {}) => {
     if (!registeredNotifications[notificationKey]) return false
     registeredNotifications[notificationKey].textList = newTextList
+    registeredNotifications[notificationKey].startTime = Date.now()
+    registeredNotifications[notificationKey].durationSeconds = newOptions.durationSeconds || registeredNotifications[notificationKey].durationSeconds
+    registeredNotifications[notificationKey].startX = newOptions.startX || registeredNotifications[notificationKey].startX
+    registeredNotifications[notificationKey].startY = newOptions.startY || registeredNotifications[notificationKey].startY
+    registeredNotifications[notificationKey].zOffset = newOptions.zOffset || registeredNotifications[notificationKey].zOffset
+    registeredNotifications[notificationKey].heightOffset = newOptions.heightOffset || registeredNotifications[notificationKey].heightOffset
+    registeredNotifications[notificationKey].widthOffset = newOptions.widthOffset || registeredNotifications[notificationKey].widthOffset
+    registeredNotifications[notificationKey].scale = newOptions.scale || registeredNotifications[notificationKey].scale
     registeredNotifications[notificationKey].cachedData = null
     return true
 }
