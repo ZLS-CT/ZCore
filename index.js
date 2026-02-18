@@ -515,7 +515,6 @@ export const GetServerPlayerList = () => {
                     let formattedName = playerMP.getDisplayName().getText().trim()
                     let playerUUID = NormalizePlayerUUID(playerMP.getUUID().toString())
 
-                    // !! test this
                     playerList.push({
                         playerObject: playerMP,
                         uuid: playerUUID,
@@ -685,62 +684,6 @@ export const SplitStringOrTextComponentByNewline = (text) => {
         return list
     }
     return null
-}
-
-export const GetTextWithBackgroundData = (textArray, colorList) => {
-    if (isNullOrUndefined(colorList)) {
-        colorList = [30, 30, 30, 155]
-    }
-
-    let longestLength = 0
-    let lineList = []
-    textArray.forEach((line) => {
-        let lineU = GetUnformattedStringOrTextComponent(line).trim()
-        if (lineU == "") {
-            lineList.push(line)
-            return
-        }
-
-        lineList.push(...SplitStringOrTextComponentByNewline(line))
-    })
-
-    lineList.forEach((line) => {
-        let width = ZRenderLib.getStringWidth(GetUnformattedStringOrTextComponent(line).trim())
-        longestLength = Math.max(longestLength, width)
-    })
-    longestLength += 6.5
-
-    let divider = GetDivider(longestLength - ZRenderLib.getStringWidth("  "))
-    let finalTextComponent = new ZTextComponent()
-    lineList.forEach((line) => {
-        let lineU = GetUnformattedStringOrTextComponent(line).trim()
-        if (lineU == "_-_divider") {
-            finalTextComponent.withText("\n" + divider)
-            return
-        }
-
-        if (!finalTextComponent.isEmpty()) {
-            finalTextComponent.withText("\n")
-        }
-
-        finalTextComponent.withText(line)
-    })
-
-    return {
-        textComponent: finalTextComponent,
-        backgroundColorList: colorList,
-        width: longestLength,
-        height: (lineList.length * 9) + (2.5 * 2),
-    }
-}
-
-export const DrawTextWithBackground = (drawContext, text, startX, startY, backgroundColorList, scale, backgroundWidth, backgroundHeight) => {
-    ZRenderLib.drawRectRGBA(drawContext, startX, startY, backgroundWidth * scale, backgroundHeight * scale, ...backgroundColorList)
-    if (isLegacy) {
-        ZRenderLib.drawGUIString(drawContext, text, startX + 3.5, startY + 3.5, ZRenderLib.WHITE, scale, false, true, 512)
-    } else {
-        ZRenderLib.drawGUIText(drawContext, text, startX + 3.5, startY + 3.5, ZRenderLib.WHITE, scale, false, true, 512)
-    }
 }
 
 export const GetPlayerLevelColor = (playerLevel) => {
@@ -1014,7 +957,6 @@ export const convertNBTToNBTObject = (itemNBT) => {
             const itemLore = getTagList(displayTag, "Lore", 8)
             const loreCount = getTagListCount(itemLore)
             for (let i = 0; i < loreCount; i++) {
-                // !! changed from "" to At in legacy
                 const loreLine = getStringTagAt(itemLore, i)
                 loreLines.push(loreLine)
             }
@@ -2088,3 +2030,105 @@ export const createCommandHandler = (commands, subcommand, ...args) => {
     commands._defaultWithInput.handler(...args)
 }
 
+export const GetTextWithBackgroundData = (textList, colorList) => {
+    if (isNullOrUndefined(colorList)) {
+        colorList = [30, 30, 30, 155]
+    }
+
+    let longestLength = 0
+    let lineList = []
+    textList.forEach((line) => {
+        let lineU = GetUnformattedStringOrTextComponent(line).trim()
+        if (lineU == "") {
+            lineList.push(line)
+            return
+        }
+
+        lineList.push(...SplitStringOrTextComponentByNewline(line))
+    })
+
+    lineList.forEach((line) => {
+        let width = ZRenderLib.getStringWidth(GetUnformattedStringOrTextComponent(line).trim())
+        longestLength = Math.max(longestLength, width)
+    })
+    longestLength += 6.5
+
+    const divider = GetDivider(longestLength - ZRenderLib.getStringWidth("  ")) !! what is this?
+    const finalTextComponent = new ZTextComponent()
+    lineList.forEach((line) => {
+        let lineU = GetUnformattedStringOrTextComponent(line).trim()
+        if (lineU == "_-_divider") {
+            finalTextComponent.withText("\n" + divider)
+            return
+        }
+
+        if (!finalTextComponent.isEmpty()) {
+            finalTextComponent.withText("\n")
+        }
+
+        finalTextComponent.withText(line)
+    })
+
+    return {
+        textComponent: finalTextComponent,
+        backgroundColorList: colorList,
+        width: longestLength,
+        height: (lineList.length * 9) + (2.5 * 2),
+    }
+}
+export const DrawTextWithBackground = (drawContext, text, startX, startY, zOffset, backgroundColorList, scale, backgroundWidth, backgroundHeight) => {
+    ZRenderLib.drawRectRGBA(drawContext, startX, startY, backgroundWidth * scale, backgroundHeight * scale, ...backgroundColorList, zOffset)
+    if (isLegacy) {
+        ZRenderLib.drawGUIString(drawContext, text, startX + 3.5, startY + 3.5, ZRenderLib.WHITE, scale, false, true, 512, zOffset)
+        return
+    }
+    ZRenderLib.drawGUIText(drawContext, text, startX + 3.5, startY + 3.5, ZRenderLib.WHITE, scale, false, true, 512, zOffset)
+}
+const registeredNotifications = {}
+export const RegisterNotification = (notificationKey, textList, options = {}) => {
+    registeredNotifications[notificationKey] = {
+        textList,
+        startTime: Date.now(),
+        durationSeconds: options.durationSeconds || 5,
+        startX: options.startX || 100,
+        startY: options.startY || 100,
+        zOffset: options.zOffset || 0,
+        heightOffset: options.heightOffset || 0,
+        widthOffset: options.widthOffset || 0,
+        scale: options.scale || 1,
+        priority: options.priority || 0,
+        cachedData: null,
+    }
+}
+export const SetCachedNotificationData = (notificationKey, notificationData) => {
+    
+    const endingTime = 
+}
+export const TryDrawNotifications = (drawContext, partialTicks) => {
+    registeredNotifications.forEach().sort((a, b) => b.priority - a.priority).forEach(([notificationKey, notificationData], index) => {
+        const { durationSeconds, startTime } = notificationData
+        const elapsedSeconds = (Date.now() - startTime) / 1000
+        if (elapsedSeconds >= durationSeconds) {
+            delete registeredNotifications[notificationKey]
+            return
+        }
+
+        const { textList, startX, startY, zOffset, heightOffset, widthOffset, scale } = notificationData
+        const textWithBackgroundData = GetTextWithBackgroundData(textList)
+        DrawTextWithBackground(
+            drawContext,
+            textWithBackgroundData.textComponent,
+            startX + widthOffset + 2,
+            startY + heightOffset + 2 + (index * (textWithBackgroundData.height + 2)),
+            zOffset,
+            textWithBackgroundData.backgroundColorList,
+            scale,
+            textWithBackgroundData.width + widthOffset,
+            textWithBackgroundData.height + heightOffset,
+        )
+    })
+}
+
+register("RenderHudOverlay", (drawContext, partialTicks) => {
+    TryDrawNotifications(drawContext, partialTicks)
+})
