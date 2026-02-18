@@ -2194,11 +2194,20 @@ export const RegisterNotification = (notificationKey, textList, options = {}) =>
     }
     sortedNotificationKeys = Object.keys(registeredNotifications).sort((a, b) => registeredNotifications[b].priority - registeredNotifications[a].priority)
 }
+export const IsNotificationRegistered = (notificationKey) => {
+    return !!registeredNotifications[notificationKey]
+}
 export const UpdateNotificationDataText = (notificationKey, newTextList) => {
     if (!registeredNotifications[notificationKey]) return false
     registeredNotifications[notificationKey].textList = newTextList
     registeredNotifications[notificationKey].cachedData = null
     return true
+}
+export const GetCachedNotificationData = (notificationKey) => {
+    if (!registeredNotifications[notificationKey]) {
+        return SetCachedNotificationData(notificationKey, notificationData)
+    }
+    return registeredNotifications[notificationKey].cachedData
 }
 export const SetCachedNotificationData = (notificationKey, notificationData) => {
     const endingTime = Date.now() + (notificationData.durationSeconds * 1000)
@@ -2221,11 +2230,7 @@ export const TryDrawNotifications = (drawContext, partialTicks) => {
         const notificationData = registeredNotifications[notificationKey]
         if (!notificationData) return
 
-        let cachedData = notificationData.cachedData
-        if (!cachedData) {
-            cachedData = SetCachedNotificationData(notificationKey, notificationData)
-        }
-
+        let cachedData = GetCachedNotificationData(notificationKey)
         if (Date.now() >= cachedData.endingTime) {
             delete registeredNotifications[notificationKey]
             needsResort = true
