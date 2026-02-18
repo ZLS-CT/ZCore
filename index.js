@@ -2194,6 +2194,12 @@ export const RegisterNotification = (notificationKey, textList, options = {}) =>
     }
     sortedNotificationKeys = Object.keys(registeredNotifications).sort((a, b) => registeredNotifications[b].priority - registeredNotifications[a].priority)
 }
+export const UpdateNotificationDataText = (notificationKey, newTextList) => {
+    if (!registeredNotifications[notificationKey]) return false
+    registeredNotifications[notificationKey].textList = newTextList
+    registeredNotifications[notificationKey].cachedData = null
+    return true
+}
 export const SetCachedNotificationData = (notificationKey, notificationData) => {
     const endingTime = Date.now() + (notificationData.durationSeconds * 1000)
     const textWithBackgroundData = GetTextWithBackgroundData(notificationData.textList)
