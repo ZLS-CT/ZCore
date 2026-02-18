@@ -2058,7 +2058,7 @@ export class UpdatingFile {
             if (!file.exists()) return null
             return JSON.parse(FileLib.read(filePath))
         } catch (e) {
-            Utils.ChatDebug(`Error in Read${this.fileName}:`, e, e.stack)
+            ChatDebug(`Error in Read${this.fileName}:`, e, e.stack)
         }
         return null
     }
@@ -2070,7 +2070,7 @@ export class UpdatingFile {
                 callback(JSON.parse(`${FileLib.read(fullPath)}`))
                 return
             } catch (e) {
-                Utils.ChatDebug(`&cError preloading ${this.fileName}:`, e, e.stack)
+                ChatDebug(`&cError preloading ${this.fileName}:`, e, e.stack)
             }
         }
         callback(null)
@@ -2091,33 +2091,31 @@ export class UpdatingFile {
         })
         .then(response => {
             if (!response || !response["success"]) {
-                Utils.ChatDebug(`Error #1 in Download${this.fileName}:`, JSON.stringify(response))
-                // callback(null)
+                ChatDebug(`Error #1 in Download${this.fileName}:`, JSON.stringify(response))
                 return
             }
 
             const outputFolder = this.getOutputFolder()
             if (!outputFolder.exists() && !outputFolder.mkdirs()) {
-                Utils.ChatDebug(`Failed to create directory: ${outputFolder.getAbsolutePath()}`)
+                ChatDebug(`Failed to create directory: ${outputFolder.getAbsolutePath()}`)
             }
 
             const fullPath = this.getFullFilePath()
             const newDownloadedVersion = response["version"] || 0
             if (newDownloadedVersion <= currentFileVersion && FileLib.exists(fullPath)) {
-                Utils.ChatDebug(`No new ${this.fileName} version available. Current: v${currentFileVersion}, New version: v${newDownloadedVersion}`)
+                ChatDebug(`No new ${this.fileName} version available. Current: v${currentFileVersion}, New version: v${newDownloadedVersion}`)
                 callback(this.readFile(), null)
                 return
             }
 
-            this.setInstalledFileVersion(newDownloadedVersion)
-            Utils.ChatDebug(`New ${this.fileName} version available: ${currentFileVersion} -> ${newDownloadedVersion}. Updating...`)
+            ChatDebug(`New ${this.fileName} version available: ${currentFileVersion} -> ${newDownloadedVersion}. Updating...`)
 
             FileLib.write(fullPath, JSON.stringify(JSON.parse(response["body"]), null, 4))
-            Utils.ChatDebug(`Successfully updated ${this.fileName} to version v${newDownloadedVersion}.`)
+            ChatDebug(`Successfully updated ${this.fileName} to version v${newDownloadedVersion}.`)
             callback(this.readFile(), newDownloadedVersion)
         })
         .catch(e => {
-            Utils.ChatDebug(`Error #2 in Download${this.fileName}:`, e, e.stack)
+            ChatDebug(`Error #2 in Download${this.fileName}:`, e, e.stack)
         })
     }
 }
