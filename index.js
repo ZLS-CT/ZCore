@@ -2246,11 +2246,3 @@ export const TryDrawNotifications = (drawContext, partialTicks) => {
 register("RenderHudOverlay", (drawContext, partialTicks) => {
     TryDrawNotifications(drawContext, partialTicks)
 })
-
-RegisterNotification("example", [
-    "Hello,",
-    "world!"
-], {
-    durationSeconds: 500,
-})
-
