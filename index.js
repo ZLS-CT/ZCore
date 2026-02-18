@@ -2177,9 +2177,8 @@ export const DrawTextWithBackground = (drawContext, text, startX, startY, zOffse
 const registeredNotifications = {}
 let sortedNotificationKeys = []
 export const RegisterNotification = (notificationKey, textList, options = {}) => {
-    registeredNotifications[notificationKey] = {
+    const notificationData = {
         textList,
-        startTime: Date.now(),
         durationSeconds: options.durationSeconds || 5,
         startX: options.startX || 100,
         startY: options.startY || 100,
@@ -2190,6 +2189,8 @@ export const RegisterNotification = (notificationKey, textList, options = {}) =>
         priority: options.priority || 0,
         cachedData: null,
     }
+    notificationData.endingTime = Date.now() + (notificationData.durationSeconds * 1000)
+    registeredNotifications[notificationKey] = notificationData
     sortedNotificationKeys = Object.keys(registeredNotifications).sort((a, b) => registeredNotifications[b].priority - registeredNotifications[a].priority)
 }
 export const IsNotificationRegistered = (notificationKey) => {
@@ -2198,7 +2199,6 @@ export const IsNotificationRegistered = (notificationKey) => {
 export const UpdateNotificationData = (notificationKey, newTextList, newOptions = {}) => {
     if (!registeredNotifications[notificationKey]) return false
     registeredNotifications[notificationKey].textList = newTextList
-    registeredNotifications[notificationKey].startTime = Date.now()
     registeredNotifications[notificationKey].durationSeconds = newOptions.durationSeconds || registeredNotifications[notificationKey].durationSeconds
     registeredNotifications[notificationKey].startX = newOptions.startX || registeredNotifications[notificationKey].startX
     registeredNotifications[notificationKey].startY = newOptions.startY || registeredNotifications[notificationKey].startY
@@ -2210,15 +2210,16 @@ export const UpdateNotificationData = (notificationKey, newTextList, newOptions 
     return true
 }
 export const GetCachedNotificationData = (notificationKey) => {
-    if (!registeredNotifications[notificationKey]) {
-        return SetCachedNotificationData(notificationKey, notificationData)
+    if (!registeredNotifications[notificationKey]) return null
+    if (!registeredNotifications[notificationKey].cachedData) {
+        return SetCachedNotificationData(notificationKey, registeredNotifications[notificationKey])
     }
     return registeredNotifications[notificationKey].cachedData
 }
 export const SetCachedNotificationData = (notificationKey, notificationData) => {
-    const endingTime = Date.now() + (notificationData.durationSeconds * 1000)
     const textWithBackgroundData = GetTextWithBackgroundData(notificationData.textList)
     const cachedData = {
+        endingTime: notificationData.endingTime,
         x: notificationData.startX + notificationData.widthOffset + 2,
         y: notificationData.startY + notificationData.heightOffset + 2,
         width: textWithBackgroundData.width + notificationData.widthOffset,
