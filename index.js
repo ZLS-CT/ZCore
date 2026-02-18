@@ -2145,7 +2145,7 @@ export const GetTextWithBackgroundData = (textList, colorList) => {
     })
     longestLength += 6.5
 
-    const divider = GetDivider(longestLength - ZRenderLib.getStringWidth("  ")) !! what is this?
+    const divider = GetDivider(longestLength - ZRenderLib.getStringWidth("  "))
     const finalTextComponent = new ZTextComponent()
     lineList.forEach((line) => {
         let lineU = GetUnformattedStringOrTextComponent(line).trim()
@@ -2162,14 +2162,14 @@ export const GetTextWithBackgroundData = (textList, colorList) => {
     })
 
     return {
-        textComponent: finalTextComponent,
+        zTextComponent: finalTextComponent,
         backgroundColorList: colorList,
         width: longestLength,
         height: (lineList.length * 9) + (2.5 * 2),
     }
 }
-export const DrawTextWithBackground = (drawContext, text, startX, startY, zOffset, backgroundColorList, scale, backgroundWidth, backgroundHeight) => {
-    ZRenderLib.drawRectRGBA(drawContext, startX, startY, backgroundWidth * scale, backgroundHeight * scale, ...backgroundColorList, zOffset)
+export const DrawTextWithBackground = (drawContext, text, startX, startY, zOffset, backgroundWidth, backgroundHeight, scale, backgroundColorList) => {
+    ZRenderLib.drawRectRGBA(drawContext, startX, startY, backgroundWidth * scale, backgroundHeight * scale, ...backgroundColorList)
     if (isLegacy) {
         ZRenderLib.drawGUIString(drawContext, text, startX + 3.5, startY + 3.5, ZRenderLib.WHITE, scale, false, true, 512, zOffset)
         return
@@ -2177,6 +2177,7 @@ export const DrawTextWithBackground = (drawContext, text, startX, startY, zOffse
     ZRenderLib.drawGUIText(drawContext, text, startX + 3.5, startY + 3.5, ZRenderLib.WHITE, scale, false, true, 512, zOffset)
 }
 const registeredNotifications = {}
+let sortedNotificationKeys = []
 export const RegisterNotification = (notificationKey, textList, options = {}) => {
     registeredNotifications[notificationKey] = {
         textList,
@@ -2191,36 +2192,65 @@ export const RegisterNotification = (notificationKey, textList, options = {}) =>
         priority: options.priority || 0,
         cachedData: null,
     }
+    sortedNotificationKeys = Object.keys(registeredNotifications).sort((a, b) => registeredNotifications[b].priority - registeredNotifications[a].priority)
 }
 export const SetCachedNotificationData = (notificationKey, notificationData) => {
-    
-    const endingTime = 
+    const endingTime = Date.now() + (notificationData.durationSeconds * 1000)
+    const textWithBackgroundData = GetTextWithBackgroundData(notificationData.textList)
+    const cachedData = {
+        x: notificationData.startX + notificationData.widthOffset + 2,
+        y: notificationData.startY + notificationData.heightOffset + 2,
+        width: textWithBackgroundData.width + notificationData.widthOffset,
+        height: textWithBackgroundData.height + notificationData.heightOffset,
+        builtTextComponent: textWithBackgroundData.zTextComponent.build(),
+        backgroundColorList: textWithBackgroundData.backgroundColorList,
+        endingTime: endingTime,
+    }
+    registeredNotifications[notificationKey].cachedData = cachedData
+    return cachedData
 }
 export const TryDrawNotifications = (drawContext, partialTicks) => {
-    registeredNotifications.forEach().sort((a, b) => b.priority - a.priority).forEach(([notificationKey, notificationData], index) => {
-        const { durationSeconds, startTime } = notificationData
-        const elapsedSeconds = (Date.now() - startTime) / 1000
-        if (elapsedSeconds >= durationSeconds) {
+    let needsResort = false
+    sortedNotificationKeys.forEach((notificationKey) => {
+        const notificationData = registeredNotifications[notificationKey]
+        if (!notificationData) return
+
+        let cachedData = notificationData.cachedData
+        if (!cachedData) {
+            cachedData = SetCachedNotificationData(notificationKey, notificationData)
+        }
+
+        if (Date.now() >= cachedData.endingTime) {
             delete registeredNotifications[notificationKey]
+            needsResort = true
             return
         }
 
-        const { textList, startX, startY, zOffset, heightOffset, widthOffset, scale } = notificationData
-        const textWithBackgroundData = GetTextWithBackgroundData(textList)
         DrawTextWithBackground(
             drawContext,
-            textWithBackgroundData.textComponent,
-            startX + widthOffset + 2,
-            startY + heightOffset + 2 + (index * (textWithBackgroundData.height + 2)),
-            zOffset,
-            textWithBackgroundData.backgroundColorList,
-            scale,
-            textWithBackgroundData.width + widthOffset,
-            textWithBackgroundData.height + heightOffset,
+            cachedData.builtTextComponent,
+            cachedData.x,
+            cachedData.y,
+            notificationData.zOffset,
+            cachedData.width,
+            cachedData.height,
+            notificationData.scale,
+            cachedData.backgroundColorList,
         )
     })
+
+    if (!needsResort) return
+    sortedNotificationKeys = Object.keys(registeredNotifications).sort((a, b) => registeredNotifications[b].priority - registeredNotifications[a].priority)
 }
 
 register("RenderHudOverlay", (drawContext, partialTicks) => {
     TryDrawNotifications(drawContext, partialTicks)
 })
+
+RegisterNotification("example", [
+    "Hello,",
+    "world!"
+], {
+    durationSeconds: 500,
+})
+
