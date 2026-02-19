@@ -642,7 +642,7 @@ export const CopyFolderRecursive = (source, destination, exclusions = []) => {
         if (Files1.isDirectory(file)) {
             Files1.createDirectories(destFile)
         } else {
-            Files1.copy(file, destFile)
+            Files1.copy(file, destFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
         }
     })
 }
