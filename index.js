@@ -2167,7 +2167,7 @@ export const GetTextWithBackgroundData = (textList, colorList) => {
     }
 }
 export const DrawTextWithBackground = (drawContext, text, startX, startY, zOffset, backgroundWidth, backgroundHeight, scale, backgroundColorList) => {
-    ZRenderLib.drawRectRGBA(drawContext, startX, startY, backgroundWidth * scale, backgroundHeight * scale, ...backgroundColorList)
+    ZRenderLib.drawRect(drawContext, startX, startY, backgroundWidth * scale, backgroundHeight * scale, backgroundColorList)
     if (isLegacy) {
         ZRenderLib.drawGUIString(drawContext, text, startX + 3.5, startY + 3.5, ZRenderLib.WHITE, scale, false, true, 512, zOffset)
         return
@@ -2185,11 +2185,16 @@ export const RegisterNotification = (notificationKey, textList, options = {}) =>
         zOffset: options.zOffset || 0,
         heightOffset: options.heightOffset || 0,
         widthOffset: options.widthOffset || 0,
-        scale: options.scale || 1.5,
+        scale: options.scale || 1,
         priority: options.priority || 0,
+        drawFunction: options.drawFunction || null,
         cachedData: null,
     }
-    notificationData.endingTime = Date.now() + (notificationData.durationSeconds * 1000)
+    if (notificationData.durationSeconds != -1) {
+        notificationData.endingTime = Date.now() + (notificationData.durationSeconds * 1000)
+    } else {
+        notificationData.endingTime = null
+    }
     registeredNotifications[notificationKey] = notificationData
     sortedNotificationKeys = Object.keys(registeredNotifications).sort((a, b) => registeredNotifications[b].priority - registeredNotifications[a].priority)
 }
@@ -2206,6 +2211,7 @@ export const UpdateNotificationData = (notificationKey, newTextList, newOptions 
     registeredNotifications[notificationKey].heightOffset = newOptions.heightOffset || registeredNotifications[notificationKey].heightOffset
     registeredNotifications[notificationKey].widthOffset = newOptions.widthOffset || registeredNotifications[notificationKey].widthOffset
     registeredNotifications[notificationKey].scale = newOptions.scale || registeredNotifications[notificationKey].scale
+    registeredNotifications[notificationKey].drawFunction = newOptions.drawFunction || registeredNotifications[notificationKey].drawFunction
     registeredNotifications[notificationKey].cachedData = null
     return true
 }
@@ -2227,6 +2233,7 @@ export const SetCachedNotificationData = (notificationKey, notificationData) => 
         builtTextComponent: textWithBackgroundData.zTextComponent.build(),
         backgroundColorList: textWithBackgroundData.backgroundColorList,
         scale: notificationData.scale,
+        drawFunction: notificationData.drawFunction,
     }
     registeredNotifications[notificationKey].cachedData = cachedData
     return cachedData
@@ -2238,12 +2245,16 @@ export const TryDrawNotifications = (drawContext, partialTicks) => {
         if (!notificationData) return
 
         let cachedData = GetCachedNotificationData(notificationKey)
-        if (Date.now() >= cachedData.endingTime) {
+        if (cachedData.endingTime != null && Date.now() >= cachedData.endingTime) {
             delete registeredNotifications[notificationKey]
             needsResort = true
             return
         }
 
+        if (cachedData.drawFunction) {
+            cachedData.drawFunction(drawContext, cachedData)
+            return
+        }
         DrawTextWithBackground(
             drawContext,
             cachedData.builtTextComponent,
