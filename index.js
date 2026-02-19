@@ -2103,15 +2103,15 @@ export class UpdatingFile {
             const fullPath = this.getFullFilePath()
             const newDownloadedVersion = response["version"] || 0
             if (newDownloadedVersion <= currentFileVersion && FileLib.exists(fullPath)) {
-                ChatDebug(`No new ${this.fileName} version available. Current: v${currentFileVersion}, New version: v${newDownloadedVersion}`)
+                // ChatDebug(`No new ${this.fileName} version available. Current: v${currentFileVersion}, New version: v${newDownloadedVersion}`)
                 callback(this.readFile(), null)
                 return
             }
 
-            ChatDebug(`New ${this.fileName} version available: ${currentFileVersion} -> ${newDownloadedVersion}. Updating...`)
+            console.log(`New ${this.fileName} version available: ${currentFileVersion} -> ${newDownloadedVersion}. Updating...`)
 
             FileLib.write(fullPath, JSON.stringify(JSON.parse(response["body"]), null, 4))
-            ChatDebug(`Successfully updated ${this.fileName} to version v${newDownloadedVersion}.`)
+            console.log(`Successfully updated ${this.fileName} to version v${newDownloadedVersion}.`)
             callback(this.readFile(), newDownloadedVersion)
         })
         .catch(e => {
