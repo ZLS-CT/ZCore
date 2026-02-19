@@ -2201,6 +2201,12 @@ export const RegisterNotification = (notificationKey, textList, options = {}) =>
 export const IsNotificationRegistered = (notificationKey) => {
     return !!registeredNotifications[notificationKey]
 }
+export const DeleteNotification = (notificationKey) => {
+    if (!registeredNotifications[notificationKey]) return false
+    delete registeredNotifications[notificationKey]
+    sortedNotificationKeys = Object.keys(registeredNotifications).sort((a, b) => registeredNotifications[b].priority - registeredNotifications[a].priority)
+    return true
+}
 export const UpdateNotificationData = (notificationKey, newTextList, newOptions = {}) => {
     if (!registeredNotifications[notificationKey]) return false
     registeredNotifications[notificationKey].textList = newTextList
