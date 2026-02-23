@@ -2167,12 +2167,12 @@ export const GetTextWithBackgroundData = (textList, colorList) => {
     }
 }
 export const DrawTextWithBackground = (drawContext, text, startX, startY, zOffset, backgroundWidth, backgroundHeight, scale, backgroundColorList) => {
-    ZRenderLib.drawRect(drawContext, startX, startY, backgroundWidth * scale, backgroundHeight * scale, backgroundColorList)
+    ZRenderLib.drawRect(drawContext, startX, startY, backgroundWidth * scale, backgroundHeight * scale, backgroundColorList, zOffset)
     if (isLegacy) {
-        ZRenderLib.drawGUIString(drawContext, text, startX + 3.5, startY + 3.5, ZRenderLib.WHITE, scale, false, true, 512, zOffset)
+        ZRenderLib.drawGUIString(drawContext, text, startX + 3.5, startY + 3.5, ZRenderLib.WHITE, scale, false, true, 512, zOffset + 1)
         return
     }
-    ZRenderLib.drawGUIText(drawContext, text, startX + 3.5, startY + 3.5, ZRenderLib.WHITE, scale, false, true, 512, zOffset)
+    ZRenderLib.drawGUIText(drawContext, text, startX + 3.5, startY + 3.5, ZRenderLib.WHITE, scale, false, true, 512, zOffset + 1)
 }
 const registeredNotifications = {}
 let sortedNotificationKeys = []
