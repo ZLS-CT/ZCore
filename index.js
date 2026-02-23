@@ -536,7 +536,15 @@ export const GetServerPlayerList = () => {
                 if (networkPlayerInfo != null) {
                     let teamPrefix = new TextComponent(team.getPrefix() || "")
                     let teamSuffix = new TextComponent(team.getSuffix() || "")
-                    let playerName = networkPlayerInfo.profile.getName()
+                    let playerName = ""
+                    let playerUUID = ""
+                    if (gameVersion <= 12108) {
+                        playerName = networkPlayerInfo.profile.getName()
+                        playerUUID = networkPlayerInfo.profile.getId().toString()
+                    } else {
+                        playerName = networkPlayerInfo.profile.name()
+                        playerUUID = networkPlayerInfo.profile.id().toString()
+                    }
                     let displayName = null
                     let teamColor = team.getColor()
                     if (teamColor != null) {
@@ -550,11 +558,10 @@ export const GetServerPlayerList = () => {
 
                     let playerMP = new PlayerMP(new net.minecraft.client.network.OtherClientPlayerEntity(World.toMC(), networkPlayerInfo.profile))
                     let formattedName = teamPrefix.withText(displayName).withText(teamSuffix)
-                    let playerUUID = NormalizePlayerUUID(networkPlayerInfo.profile.getId().toString())
 
                     playerList.push({
                         playerObject: playerMP,
-                        uuid: playerUUID,
+                        uuid: NormalizePlayerUUID(playerUUID),
                         usernameAndRank: formattedName.formattedText,
                     })
                 }
