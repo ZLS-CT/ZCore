@@ -865,7 +865,14 @@ export const getCustomDataNBT = (item) => {
         return legacyGetOrCreateCustomNBT(itemStack)
     }
     const customDataComponent = item.get(DataComponentTypes1.CUSTOM_DATA)
-    return customDataComponent ? customDataComponent.nbt : NBTComponent.DEFAULT.nbt.copy()
+
+    if (customDataComponent) {
+        return ((gameVersion <= 12108) ?
+            customDataComponent.nbt :
+            customDataComponent.copyNbt()
+        ) || null
+    }
+    return NBTComponent.DEFAULT.nbt.copy()
 }
 
 export const legacyGetOrCreateCustomNBT = (itemStack) => {
@@ -910,7 +917,10 @@ export const getItemStackNBTObject = (itemStack) => {
     }
     itemID = getItemStackRegistryName(itemStack)
 
-    customNBT = itemStack.get(DataComponentTypes1.CUSTOM_DATA)?.nbt || null
+    customNBT = ((gameVersion <= 12108) ?
+        itemStack.get(DataComponentTypes1.CUSTOM_DATA)?.nbt :
+        itemStack.get(DataComponentTypes1.CUSTOM_DATA)?.copyNbt()
+    ) || null
 
     const loreComponent = itemStack.get(DataComponentTypes1.LORE)
     loreLines = new ArrayList(loreComponent?.lines() || []).map(line => {
