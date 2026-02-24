@@ -2156,7 +2156,7 @@ export const GetTextWithBackgroundData = (textList, colorList) => {
     })
 
     lineList.forEach((line) => {
-        let width = ZRenderLib.getStringWidth(GetUnformattedStringOrTextComponent(line).trim())
+        let width = ZRenderLib.getStringWidth(GetUnformattedStringOrTextComponent(line))
         longestLength = Math.max(longestLength, width)
     })
     longestLength += 6.5
