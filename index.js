@@ -2009,7 +2009,17 @@ export const registerNewCommand = (commandName, legacyBody, modernBody, aliases 
     buildModernCommand(commandName, modernBody, aliases)
 }
 
-const { literal: cLiteral, argument: cArgument, string: cString, exec: cExec, bool: cBool, integer: cInteger } = Commands
+let cLiteral, cArgument, cString, cExec, cBool, cInteger, cGreedyString = null
+if (!isLegacy) {
+    cLiteral = Commands.literal
+    cArgument = Commands.argument
+    cString = Commands.string
+    cExec = Commands.exec
+    cBool = Commands.bool
+    cInteger = Commands.integer
+    cGreedyString = Commands.greedyString
+}
+
 export const createCommandLiteral = (commands, subcommandName) => {
     const cmd = commands[subcommandName]
     cLiteral(subcommandName, () => {
@@ -2296,6 +2306,7 @@ export const TryDrawNotifications = (drawContext, partialTicks) => {
     sortedNotificationKeys = Object.keys(registeredNotifications).sort((a, b) => registeredNotifications[b].priority - registeredNotifications[a].priority)
 }
 
-register("RenderHudOverlay", (drawContext, partialTicks) => {
+const renderOverlayTriggerName = isLegacy ? "RenderOverlay" : "RenderHudOverlay"
+register(renderOverlayTriggerName, (drawContext, partialTicks) => {
     TryDrawNotifications(drawContext, partialTicks)
 })
