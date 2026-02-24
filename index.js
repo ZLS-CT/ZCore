@@ -613,24 +613,25 @@ export const DeleteLockedFile = (filePathString) => {
     const filePath = Paths1.get(filePathString).normalize()
     const file = new File1(filePath.toString())
 
-    if (file.exists()) {
-        file.setWritable(true, false)
-        if (file.delete()) return true
+    if (!file.exists()) return true
 
-        try {
-            const fos = new FileOutputStream1(file, true)
-            fos.close()
-        }
-        catch (e) { }
+    file.setWritable(true, false)
 
-        try {
-            Files1.delete(filePath)
-            return true
-        }
-        catch (e) { file.deleteOnExit() }
-    } else {
+    if (file.delete()) return true
+
+    try {
+        Files1.delete(filePath)
         return true
     }
+    catch (e) { }
+
+    try {
+        const fos = new FileOutputStream1(file, true)
+        fos.close()
+    }
+    catch (e) { }
+
+    file.deleteOnExit()
     return false
 }
 
