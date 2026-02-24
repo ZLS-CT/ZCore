@@ -1051,7 +1051,7 @@ export const GetNormalizedNewLines = (baseText) => {
 }
 
 export const DrawItemOverlayRectangle = (drawContext, x, y, z, colorList) => {
-    ZRenderLib.drawRect(drawContext, x, y, 16, 16, colorList, z)
+    drawContext.fill(x, y, x + 16, y + 16, ZRenderLib.getRGBAColor(...colorList).getIntARGB())
 }
 export const DrawItemOverlayRectangleJavaColor = (drawContext, x, y, z, javaColor) => {
     DrawItemOverlayRectangle(drawContext, x, y, z, [javaColor.getRed(), javaColor.getGreen(), javaColor.getBlue(), javaColor.getAlpha()])
