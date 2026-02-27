@@ -613,24 +613,25 @@ export const DeleteLockedFile = (filePathString) => {
     const filePath = Paths1.get(filePathString).normalize()
     const file = new File1(filePath.toString())
 
-    if (file.exists()) {
-        file.setWritable(true, false)
-        if (file.delete()) return true
+    if (!file.exists()) return true
 
-        try {
-            const fos = new FileOutputStream1(file, true)
-            fos.close()
-        }
-        catch (e) { }
+    file.setWritable(true, false)
 
-        try {
-            Files1.delete(filePath)
-            return true
-        }
-        catch (e) { file.deleteOnExit() }
-    } else {
+    if (file.delete()) return true
+
+    try {
+        Files1.delete(filePath)
         return true
     }
+    catch (e) { }
+
+    try {
+        const fos = new FileOutputStream1(file, true)
+        fos.close()
+    }
+    catch (e) { }
+
+    file.deleteOnExit()
     return false
 }
 
@@ -771,7 +772,7 @@ export const getStringTagAt = (nbtCompound, index) => {
     if (isLegacy) {
         return nbtCompound.func_150307_f/*getStringTagAt*/(index)
     }
-    return nbtCompound.getCompound(index).orElse(null)
+    return nbtCompound.getString(index).orElse(null)
 }
 export const getCompoundTagAt = (nbtCompound, index) => {
     if (isLegacy) {
@@ -865,7 +866,14 @@ export const getCustomDataNBT = (item) => {
         return legacyGetOrCreateCustomNBT(itemStack)
     }
     const customDataComponent = item.get(DataComponentTypes1.CUSTOM_DATA)
-    return customDataComponent ? customDataComponent.nbt : NBTComponent.DEFAULT.nbt.copy()
+
+    if (customDataComponent) {
+        return ((gameVersion <= 12108) ?
+            customDataComponent.nbt :
+            customDataComponent.copyNbt()
+        ) || null
+    }
+    return NBTComponent.DEFAULT.nbt.copy()
 }
 
 export const legacyGetOrCreateCustomNBT = (itemStack) => {
@@ -910,7 +918,10 @@ export const getItemStackNBTObject = (itemStack) => {
     }
     itemID = getItemStackRegistryName(itemStack)
 
-    customNBT = itemStack.get(DataComponentTypes1.CUSTOM_DATA)?.nbt || null
+    customNBT = ((gameVersion <= 12108) ?
+        itemStack.get(DataComponentTypes1.CUSTOM_DATA)?.nbt :
+        itemStack.get(DataComponentTypes1.CUSTOM_DATA)?.copyNbt()
+    ) || null
 
     const loreComponent = itemStack.get(DataComponentTypes1.LORE)
     loreLines = new ArrayList(loreComponent?.lines() || []).map(line => {
@@ -1051,7 +1062,7 @@ export const GetNormalizedNewLines = (baseText) => {
 }
 
 export const DrawItemOverlayRectangle = (drawContext, x, y, z, colorList) => {
-    ZRenderLib.drawRect(drawContext, x, y, 16, 16, colorList, z)
+    drawContext.fill(x, y, x + 16, y + 16, ZRenderLib.getRGBAColor(...colorList).getIntARGB())
 }
 export const DrawItemOverlayRectangleJavaColor = (drawContext, x, y, z, javaColor) => {
     DrawItemOverlayRectangle(drawContext, x, y, z, [javaColor.getRed(), javaColor.getGreen(), javaColor.getBlue(), javaColor.getAlpha()])
@@ -1925,6 +1936,7 @@ export const helmetNames = new Set([
     "cap",
     "tophat",
     "velvet_top_hat",
+    "velvet top hat",
     "leather cap",
     "leather helmet",
     "leather_helmet",
@@ -1937,6 +1949,7 @@ export const chestplateNames = new Set([
     "tunic",
     "shirt",
     "cashmere_jacket",
+    "cashmere jacket",
     "leather tunic",
     "leather chestplate",
     "leather_chestplate",
@@ -1950,6 +1963,7 @@ export const leggingsNames = new Set([
     "legging",
     "leg",
     "satin_trousers",
+    "satin trousers",
     "leather trousers",
     "leather pants",
     "leather leggings",
@@ -1962,6 +1976,7 @@ export const bootsNames = new Set([
     "shoe",
     "boot",
     "oxford_shoes",
+    "oxford shoes",
     "leather shoes",
     "leather boots",
     "leather_boots",
@@ -1998,7 +2013,17 @@ export const registerNewCommand = (commandName, legacyBody, modernBody, aliases 
     buildModernCommand(commandName, modernBody, aliases)
 }
 
-const { literal: cLiteral, argument: cArgument, string: cString, exec: cExec, bool: cBool, integer: cInteger } = Commands
+let cLiteral, cArgument, cString, cExec, cBool, cInteger, cGreedyString = null
+if (!isLegacy) {
+    cLiteral = Commands.literal
+    cArgument = Commands.argument
+    cString = Commands.string
+    cExec = Commands.exec
+    cBool = Commands.bool
+    cInteger = Commands.integer
+    cGreedyString = Commands.greedyString
+}
+
 export const createCommandLiteral = (commands, subcommandName) => {
     const cmd = commands[subcommandName]
     cLiteral(subcommandName, () => {
@@ -2145,7 +2170,7 @@ export const GetTextWithBackgroundData = (textList, colorList) => {
     })
 
     lineList.forEach((line) => {
-        let width = ZRenderLib.getStringWidth(GetUnformattedStringOrTextComponent(line).trim())
+        let width = ZRenderLib.getStringWidth(GetUnformattedStringOrTextComponent(line))
         longestLength = Math.max(longestLength, width)
     })
     longestLength += 6.5
@@ -2285,7 +2310,8 @@ export const TryDrawNotifications = (drawContext, partialTicks) => {
     sortedNotificationKeys = Object.keys(registeredNotifications).sort((a, b) => registeredNotifications[b].priority - registeredNotifications[a].priority)
 }
 
-register("RenderHudOverlay", (drawContext, partialTicks) => {
+const renderOverlayTriggerName = isLegacy ? "RenderOverlay" : "RenderHudOverlay"
+register(renderOverlayTriggerName, (drawContext, partialTicks) => {
     TryDrawNotifications(drawContext, partialTicks)
 })
 
