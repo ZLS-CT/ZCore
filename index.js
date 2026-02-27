@@ -1,4 +1,5 @@
 import * as ZRenderLib from "../ZRenderLib/index"
+import * as ZCoreCore from "./core"
 import { fetch } from "../ZRequest/fetch"
 
 export const GetJavaClass = (className) => {
@@ -14,35 +15,18 @@ const String1 = GetJavaClass("java.lang.String")
 const URL1 = GetJavaClass("java.net.URL")
 const Array1 = GetJavaClass("java.lang.reflect.Array")
 const Byte1 = GetJavaClass("java.lang.Byte")
-const ForgeVersion = GetJavaClass("net.minecraftforge.common.ForgeVersion")
-
-export const versionToInt = (version) => {
-    const [major, minor, patch] = version.split(".").map(Number)
-    return Number(
-        `${major}${String(minor).padStart(2, "0")}${String(patch).padStart(2, "0")}`
-    )
-}
+const ForgeLoader1 = GetJavaClass("net.minecraftforge.fml.loading.FMLLoader")
+const FabricLoader1 = GetJavaClass("net.fabricmc.loader.api.FabricLoader")
+const DataComponentTypes1 = GetJavaClass("net.minecraft.component.DataComponentTypes")
 
 const mc = Client.getMinecraft()
-let _gameVersion = Client.getVersion()
-if (Object.keys(ForgeVersion).length > 0) {
-    _gameVersion = ForgeVersion.mcVersion
-}
-export const gameVersionString = _gameVersion
-export const gameVersion = versionToInt(_gameVersion)
-export const isLegacy = gameVersion < 12100
 
+export const versionToInt = (version) => ZCoreCore.versionToInt(version)
+export const gameVersionString = ZCoreCore.gameVersionString
+export const gameVersion = ZCoreCore.gameVersion
+export const isLegacy = ZCoreCore.isLegacy
 export const modulesFolder = (isLegacy) ? Config.modulesFolder : ChatTriggers.MODULES_FOLDER
-
-let Loader1 = null
-let DataComponentTypes1 = null
-if (isLegacy) {
-    Loader1 = GetJavaClass("net.minecraftforge.fml.common.Loader")
-} else {
-    Loader1 = GetJavaClass("net.fabricmc.loader.api.FabricLoader")
-    DataComponentTypes1 = GetJavaClass("net.minecraft.component.DataComponentTypes")
-}
-export const modsFolder = (isLegacy) ? `${modulesFolder}../../../mods` : Loader1.getInstance().getGameDir().resolve("mods").toString()
+export const modsFolder = (isLegacy) ? `${modulesFolder}../../../mods` : FabricLoader1.getInstance().getGameDir().resolve("mods").toString()
 
 function rejectJavaObjects(key, value) {
     if (value && typeof value == "object" && value.getClass != undefined) {
@@ -1580,16 +1564,16 @@ export const moveFile = (target, destination, replace) => {
 
 export const isModLoaded = (modName) => {
     if (isLegacy) {
-        return Loader1.isModLoaded(modName)
+        return ForgeLoader1.isModLoaded(modName)
     }
-    return Loader1.getInstance().isModLoaded(modName)
+    return FabricLoader1.getInstance().isModLoaded(modName)
 }
 export const getInstalledModList = () => {
     if (isLegacy) {
-        return Loader1.instance().getModList()
+        return ForgeLoader1.instance().getModList()
     }
     let modList = []
-    Loader1.getInstance().getAllMods().forEach(mod => {
+    FabricLoader1.getInstance().getAllMods().forEach(mod => {
         modList.push(mod.getMetadata().getId())
     })
     return modList
