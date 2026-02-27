@@ -772,7 +772,7 @@ export const getStringTagAt = (nbtCompound, index) => {
     if (isLegacy) {
         return nbtCompound.func_150307_f/*getStringTagAt*/(index)
     }
-    return nbtCompound.getCompound(index).orElse(null)
+    return nbtCompound.getString(index).orElse(null)
 }
 export const getCompoundTagAt = (nbtCompound, index) => {
     if (isLegacy) {
