@@ -1578,6 +1578,17 @@ export const getInstalledModList = () => {
     })
     return modList
 }
+export const getInstalledModVersion = (modID) => {
+    if (isLegacy) {
+        throw new Error("Not supported in legacy")
+    }
+    return FabricLoader1.getInstance()
+        .getModContainer(modID)
+        .orElseThrow()
+        .getMetadata()
+        .getVersion()
+        .getFriendlyString()
+}
 
 const delayedCallbacks = Object.create(null)
 register("step", () => {
