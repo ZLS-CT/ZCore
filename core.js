@@ -1,4 +1,4 @@
-const ForgeVersion1 = GetJavaClass("net.minecraftforge.common.ForgeVersion")
+const ForgeVersion1 = Java.type("net.minecraftforge.common.ForgeVersion")
 const FabricLoader1 = Java.type("net.fabricmc.loader.api.FabricLoader")
 
 export const versionToInt = (version) => {
