@@ -11,6 +11,9 @@ const File1 = GetJavaClass("java.io.File")
 const FileOutputStream1 = GetJavaClass("java.io.FileOutputStream")
 const Paths1 = GetJavaClass("java.nio.file.Paths")
 const String1 = GetJavaClass("java.lang.String")
+const URL1 = GetJavaClass("java.net.URL")
+const Array1 = GetJavaClass("java.lang.reflect.Array")
+const Byte1 = GetJavaClass("java.lang.Byte")
 
 export const versionToInt = (version) => {
     const [major, minor, patch] = version.split(".").map(Number)
@@ -2317,28 +2320,28 @@ register(renderOverlayTriggerName, (drawContext, partialTicks) => {
 
 export const DownloadFileFromUrl = (fileLink, outputFileName, outputFolder, callback = null) => {
     try {
-        let url = new java.net.URL(fileLink)
+        let url = new URL1(fileLink)
         let http = url.openConnection()
         http.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
         let header = http.getHeaderFields()
 
         while (isRedirected(header)) {
             url = header.get("Location").get(0)
-            url = new java.net.URL(url)
+            url = new URL1(url)
             http = url.openConnection()
             header = http.getHeaderFields()
         }
 
-        const buffer = java.lang.reflect.Array.newInstance(java.lang.Byte.TYPE, 4096)
+        const buffer = Array1.newInstance(Byte1.TYPE, 4096)
         const inputStream = http.getInputStream()
-        const folder = new java.io.File(outputFolder)
+        const folder = new File1(outputFolder)
         if (!folder.exists()) {
             folder.mkdirs()
         }
 
         let fileOutputStream = null
         try {
-            fileOutputStream = new java.io.FileOutputStream(outputFolder + "/" + outputFileName)
+            fileOutputStream = new FileOutputStream1(outputFolder + "/" + outputFileName)
             let n = -1
             while ((n = inputStream.read(buffer)) != -1) {
                 fileOutputStream.write(buffer, 0, n)
