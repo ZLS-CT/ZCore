@@ -14,6 +14,7 @@ const String1 = GetJavaClass("java.lang.String")
 const URL1 = GetJavaClass("java.net.URL")
 const Array1 = GetJavaClass("java.lang.reflect.Array")
 const Byte1 = GetJavaClass("java.lang.Byte")
+const ForgeVersion = GetJavaClass("net.minecraftforge.common.ForgeVersion")
 
 export const versionToInt = (version) => {
     const [major, minor, patch] = version.split(".").map(Number)
@@ -23,7 +24,6 @@ export const versionToInt = (version) => {
 }
 
 const mc = Client.getMinecraft()
-const ForgeVersion = GetJavaClass("net.minecraftforge.common.ForgeVersion")
 let _gameVersion = Client.getVersion()
 if (Object.keys(ForgeVersion).length > 0) {
     _gameVersion = ForgeVersion.mcVersion
@@ -42,6 +42,7 @@ if (isLegacy) {
     Loader1 = GetJavaClass("net.fabricmc.loader.api.FabricLoader")
     DataComponentTypes1 = GetJavaClass("net.minecraft.component.DataComponentTypes")
 }
+export const modsFolder = (isLegacy) ? `${modulesFolder}../../../mods` : Loader1.getInstance().getGameDir().resolve("mods").toString()
 
 function rejectJavaObjects(key, value) {
     if (value && typeof value == "object" && value.getClass != undefined) {
