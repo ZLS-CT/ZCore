@@ -1582,12 +1582,13 @@ export const getInstalledModVersion = (modID) => {
     if (isLegacy) {
         throw new Error("Not supported in legacy")
     }
-    return FabricLoader1.getInstance()
+    const modContainer = FabricLoader1.getInstance()
         .getModContainer(modID)
-        .orElseThrow()
-        .getMetadata()
-        .getVersion()
-        .getFriendlyString()
+        .orElse(null)
+    if (modContainer) {
+        return modContainer.getMetadata().getVersion().getFriendlyString()
+    }
+    return null
 }
 
 const delayedCallbacks = Object.create(null)
