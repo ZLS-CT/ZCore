@@ -2220,6 +2220,7 @@ export const RegisterNotification = (notificationKey, textList, options = {}) =>
         scale: options.scale || 1,
         priority: options.priority || 0,
         drawFunction: options.drawFunction || null,
+        centered: options.centered || false,
         cachedData: null,
     }
     if (notificationData.durationSeconds != -1) {
@@ -2250,6 +2251,7 @@ export const UpdateNotificationData = (notificationKey, newTextList, newOptions 
     registeredNotifications[notificationKey].widthOffset = newOptions.widthOffset || registeredNotifications[notificationKey].widthOffset
     registeredNotifications[notificationKey].scale = newOptions.scale || registeredNotifications[notificationKey].scale
     registeredNotifications[notificationKey].drawFunction = newOptions.drawFunction || registeredNotifications[notificationKey].drawFunction
+    registeredNotifications[notificationKey].centered = newOptions.centered || registeredNotifications[notificationKey].centered
     registeredNotifications[notificationKey].cachedData = null
     return true
 }
@@ -2272,6 +2274,7 @@ export const SetCachedNotificationData = (notificationKey, notificationData) => 
         backgroundColorList: textWithBackgroundData.backgroundColorList,
         scale: notificationData.scale,
         drawFunction: notificationData.drawFunction,
+        centered: notificationData.centered,
     }
     registeredNotifications[notificationKey].cachedData = cachedData
     return cachedData
@@ -2293,11 +2296,23 @@ export const TryDrawNotifications = (drawContext, partialTicks) => {
             cachedData.drawFunction(drawContext, cachedData)
             return
         }
+
+        let x = cachedData.x
+        let y = cachedData.y
+        if (cachedData.centered) {
+            const screenSize = ZRenderLib.getScreenSize()
+            const width = cachedData.width
+            const height = cachedData.height
+            const scale = cachedData.scale
+            const midX = screenSize.width / 2
+            x = midX - (width * scale) / 2
+            y = screenSize.height * 3 / 4 - (height * scale) / 2
+        }
         DrawTextWithBackground(
             drawContext,
             cachedData.builtTextComponent,
-            cachedData.x,
-            cachedData.y,
+            x,
+            y,
             notificationData.zOffset,
             cachedData.width,
             cachedData.height,
