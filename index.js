@@ -2362,3 +2362,25 @@ function isRedirected(headerList) {
     }
     return false
 }
+
+export const GetMatchingFilesInDirectory = (directory, patternFunction) => {
+    const allFiles = GetAllFilesInDirectory(directory)
+    const matchingFiles = []
+    allFiles.forEach((file) => {
+        if (patternFunction(file.getFileName().toString())) {
+            matchingFiles.push(file)
+        }
+    })
+    return matchingFiles
+}
+export const GetAllFilesInDirectory = (directory) => {
+    const dir = Paths1.get(directory)
+    if (!Files1.exists(dir) || !Files1.isDirectory(dir)) return []
+
+    const allFiles = []
+    Files1.walk(dir).forEach((path) => {
+        allFiles.push(path)
+    })
+
+    return allFiles
+}
