@@ -2029,6 +2029,12 @@ export const buildModernCommand = (commandName, commandBody, aliases = []) => {
 }
 
 export const registerNewCommand = (commandName, legacyBody, modernBody, aliases = []) => {
+    const nonDuplicateAliases = new Set(aliases)
+    if (nonDuplicateAliases.size != aliases.length) {
+        ChatMessage(`Duplicate aliases found for command "${commandName}": ${aliases.join(", ")}`)
+        return
+    }
+
     if (isLegacy) {
         register("command", (...args) => {
             legacyBody(...args)
