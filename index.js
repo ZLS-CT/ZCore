@@ -873,7 +873,10 @@ export const legacyGetOrCreateCustomNBT = (itemStack) => {
     return nbt
 }
 
-export const isDyeableLeatherArmor = (item) => {
+export const isLeatherArmorType = (itemType) => {
+    return leatherArmorNames.has(itemType)
+}
+export const isLeatherArmor = (item) => {
     if (isLegacy) {
         const itemStack = getItemStack(item)
         const registryName = itemStack.func_77973_b().registryName
@@ -923,7 +926,7 @@ export const getItemStackNBTObject = (itemStack) => {
         itemName = new TextComponent(customNameComponent).formattedText
     }
 
-    if (isDyeableLeatherArmor(itemStack)) {
+    if (isLeatherArmor(itemStack)) {
         dyedColorInt = itemStack.get(DataComponentTypes1.DYED_COLOR)?.rgb()
         if (isNullOrUndefined(dyedColorInt)) dyedColorInt = null
     }
@@ -1977,6 +1980,28 @@ export const bootsNames = new Set([
     "boot",
     "oxford_shoes",
     "oxford shoes",
+    "leather shoes",
+    "leather boots",
+    "leather_boots",
+    "minecraft:leather_boots",
+])
+export const leatherArmorNames = new Set([
+    "leather cap",
+    "leather helmet",
+    "leather_helmet",
+    "minecraft:leather_helmet",
+
+    "leather tunic",
+    "leather chestplate",
+    "leather_chestplate",
+    "minecraft:leather_chestplate",
+
+    "leather trousers",
+    "leather pants",
+    "leather leggings",
+    "leather_leggings",
+    "minecraft:leather_leggings",
+
     "leather shoes",
     "leather boots",
     "leather_boots",
