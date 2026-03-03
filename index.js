@@ -1707,6 +1707,14 @@ export class ZTextComponent {
         return this
     }
 
+    withNewlineTextList(...args) { return this.addNewlineTextList(...args) }
+    addNewlineTextList(textList) {
+        textList.forEach(text => {
+            this.addText(`\n${text}`)
+        })
+        return this
+    }
+
     withTextObject(...args) { return this.addTextObject(...args) }
     addTextObject(textObject) {
         if (!textObject.hasOwnProperty("text")) {
