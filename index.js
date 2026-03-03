@@ -2318,6 +2318,8 @@ export const SetCachedNotificationData = (notificationKey, notificationData) => 
     registeredNotifications[notificationKey].cachedData = cachedData
     return cachedData
 }
+
+let lastDrawnNotificationKey = null
 export const TryDrawNotifications = (drawContext, partialTicks) => {
     let needsResort = false
     sortedNotificationKeys.forEach((notificationKey) => {
@@ -2328,8 +2330,11 @@ export const TryDrawNotifications = (drawContext, partialTicks) => {
         if (cachedData.endingTime != null && Date.now() >= cachedData.endingTime) {
             delete registeredNotifications[notificationKey]
             needsResort = true
+            lastDrawnNotificationKey = null
             return
         }
+        if (lastDrawnNotificationKey && lastDrawnNotificationKey != notificationKey) return
+        lastDrawnNotificationKey = notificationKey
 
         if (cachedData.drawFunction) {
             cachedData.drawFunction(drawContext, cachedData)
