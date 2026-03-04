@@ -2443,3 +2443,25 @@ export const GetAllFilesInDirectory = (directory) => {
 
     return allFiles
 }
+
+export const isNumberAscending = (number) => {
+    const str = number.toString()
+    if (str.length < 2) return false
+    for (let i = 1; i < str.length; i++) {
+        let prev = Number(str[i - 1])
+        let curr = Number(str[i])
+        if (curr != prev + 1) return false
+    }
+    return true
+}
+
+export const isNumberDescending = (number) => {
+    const str = number.toString()
+    if (str.length < 2) return false
+    for (let i = 1; i < str.length; i++) {
+        let prev = Number(str[i - 1])
+        let curr = Number(str[i])
+        if (curr != prev - 1) return false
+    }
+    return true
+}
