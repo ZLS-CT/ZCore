@@ -2465,3 +2465,10 @@ export const isNumberDescending = (number) => {
     }
     return true
 }
+
+export const listToLower = (list) => {
+    return list.map(item => item.toLowerCase())
+}
+export const listToUpper = (list) => {
+    return list.map(item => item.toUpperCase())
+}
