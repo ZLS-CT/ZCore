@@ -462,13 +462,11 @@ export const GetUnformattedScoreboardLines = () => {
             line = ChatLib.removeFormatting(line).trim()
             lines.push(line)
         })
-    } else {
-        Scoreboard.getLines(false).map(line => line?.getName()?.unformattedText?.replace(/(?!✌)[^\u0000-\u007F]/g, ""))?.forEach(line => {
-            line = ChatLib.removeFormatting(line).trim()
-            lines.push(line)
-        })
+        return lines
     }
-
+    Scoreboard.getLines(false).map(line => ChatLib.removeFormatting(line?.getName()?.formattedText).trim().replace(/(?!✌)[^\u0000-\u007F]/g, ""))?.forEach(line => {
+        lines.push(line)
+    })
     return lines
 }
 
