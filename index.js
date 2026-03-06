@@ -2470,3 +2470,13 @@ export const listToLower = (list) => {
 export const listToUpper = (list) => {
     return list.map(item => item.toUpperCase())
 }
+
+export const removeNullMapValues = (obj = {}) => {
+    const result = {}
+    for (const key in obj) {
+        if (obj[key] != null) {
+            result[key] = obj[key]
+        }
+    }
+    return result
+}
