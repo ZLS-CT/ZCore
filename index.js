@@ -939,7 +939,7 @@ export const getItemStackNBTObject = (itemStack) => {
     }
 
     if (itemID != null) finalObject["id"] = itemID
-    if (customNBT != null) finalObject["ExtraAttributes"] = customNBT
+    if (customNBT != null) finalObject["ExtraAttributes"] = getReadableNBTDump(customNBT)
     if ((loreLines.length > 0 || dyedColorInt != null || itemName) && !finalObject.hasOwnProperty("display")) finalObject["display"] = {}
     if (loreLines.length > 0) finalObject["display"]["Lore"] = loreLines
     if (itemName) finalObject["display"]["Name"] = itemName
@@ -996,6 +996,64 @@ export const convertNBTToNBTObject = (itemNBT) => {
     if (dyedColorInt != null) finalObject["display"]["color"] = dyedColorInt
 
     return finalObject
+}
+
+export const GetValueOfNBTTag = (nbtCompound, key = null) => {
+    if (nbtCompound == null) return null
+    if (nbtCompound instanceof net.minecraft.nbt.NbtByteArray) {
+        return nbtCompound.getByteArray()
+    }
+    if (nbtCompound instanceof net.minecraft.nbt.NbtByte) {
+        return nbtCompound.byteValue()
+    }
+    if (nbtCompound instanceof net.minecraft.nbt.NbtCompound) {
+        const obj = {}
+        nbtCompound.getKeys().toArray().forEach(k => {
+            obj[k] = GetValueOfNBTTag(nbtCompound.get(k))
+        })
+        return obj
+    }
+    if (nbtCompound instanceof net.minecraft.nbt.NbtDouble) {
+        return nbtCompound.doubleValue()
+    }
+    if (nbtCompound instanceof net.minecraft.nbt.NbtFloat) {
+        return nbtCompound.floatValue()
+    }
+    if (nbtCompound instanceof net.minecraft.nbt.NbtIntArray) {
+        return nbtCompound.getIntArray()
+    }
+    if (nbtCompound instanceof net.minecraft.nbt.NbtInt) {
+        return nbtCompound.intValue()
+    }
+    if (nbtCompound instanceof net.minecraft.nbt.NbtLongArray) {
+        return nbtCompound.getLongArray()
+    }
+    if (nbtCompound instanceof net.minecraft.nbt.NbtLong) {
+        return nbtCompound.longValue()
+    }
+    if (nbtCompound instanceof net.minecraft.nbt.NbtShort) {
+        return nbtCompound.shortValue()
+    }
+    if (nbtCompound instanceof net.minecraft.nbt.NbtString) {
+        return nbtCompound.value()
+    }
+    if (nbtCompound instanceof net.minecraft.nbt.AbstractNbtList) {
+        const arr = []
+        for (let i = 0; i < nbtCompound.size(); i++) {
+            arr.push(GetValueOfNBTTag(nbtCompound.get(i)))
+        }
+        return arr
+    }
+    throw new Error(`GetValueOfNBTTag - Unsupported NBT type ${nbtCompound.getClass().getName()}`)
+}
+export const getReadableNBTDump = (tag) => {
+    if (!tag) return {}
+    const result = {}
+    tag.getKeys().toArray().forEach(key => {
+        const value = GetValueOfNBTTag(tag.get(key), key)
+        result[key] = value
+    })
+    return result
 }
 
 export const getItemStack = (item) => {
