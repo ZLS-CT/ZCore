@@ -331,9 +331,12 @@ export const rarityToColor = (rarity) => {
     return "&f"
 }
 
+export const isOnHypixel = () => {
+    return Server.getIP().includes("hypixel")
+}
 export const isOnSkyblock = () => {
     const scoreBoard = ChatLib.removeFormatting(Scoreboard.getTitle())
-    return Server.getIP().includes("hypixel") && (scoreBoard.includes("SKIBLOCK") || scoreBoard.includes("SKYBLOCK"))
+    return isOnHypixel() && (scoreBoard.includes("SKIBLOCK") || scoreBoard.includes("SKYBLOCK"))
 }
 
 const romanValues = {
@@ -519,38 +522,38 @@ export const GetServerPlayerList = () => {
             let players = team.getPlayerList()
             players.forEach(player => {
                 let networkPlayerInfo = NetHandlerPlayClient.getPlayerListEntry(player)
-                if (networkPlayerInfo != null) {
-                    let teamPrefix = new TextComponent(team.getPrefix() || "")
-                    let teamSuffix = new TextComponent(team.getSuffix() || "")
-                    let playerName = ""
-                    let playerUUID = ""
-                    if (gameVersion <= 12108) {
-                        playerName = networkPlayerInfo.profile.getName()
-                        playerUUID = networkPlayerInfo.profile.getId().toString()
-                    } else {
-                        playerName = networkPlayerInfo.profile.name()
-                        playerUUID = networkPlayerInfo.profile.id().toString()
-                    }
-                    let displayName = null
-                    let teamColor = team.getColor()
-                    if (teamColor != null) {
-                        displayName = new TextComponent({
-                            text: playerName,
-                            color: teamColor,
-                        })
-                    } else {
-                        displayName = new TextComponent(playerName)
-                    }
+                if (networkPlayerInfo == null) return
 
-                    let playerMP = new PlayerMP(new net.minecraft.client.network.OtherClientPlayerEntity(World.toMC(), networkPlayerInfo.profile))
-                    let formattedName = teamPrefix.withText(displayName).withText(teamSuffix)
-
-                    playerList.push({
-                        playerObject: playerMP,
-                        uuid: NormalizePlayerUUID(playerUUID),
-                        usernameAndRank: formattedName.formattedText,
-                    })
+                let teamPrefix = new TextComponent(team.getPrefix() || "")
+                let teamSuffix = new TextComponent(team.getSuffix() || "")
+                let playerName = ""
+                let playerUUID = ""
+                if (gameVersion <= 12108) {
+                    playerName = networkPlayerInfo.profile.getName()
+                    playerUUID = networkPlayerInfo.profile.getId().toString()
+                } else {
+                    playerName = networkPlayerInfo.profile.name()
+                    playerUUID = networkPlayerInfo.profile.id().toString()
                 }
+                let displayName = null
+                let teamColor = team.getColor()
+                if (teamColor != null) {
+                    displayName = new TextComponent({
+                        text: playerName,
+                        color: teamColor,
+                    })
+                } else {
+                    displayName = new TextComponent(playerName)
+                }
+
+                let playerMP = new PlayerMP(new net.minecraft.client.network.OtherClientPlayerEntity(World.toMC(), networkPlayerInfo.profile))
+                let formattedName = teamPrefix.withText(displayName).withText(teamSuffix)
+
+                playerList.push({
+                    playerObject: playerMP,
+                    uuid: NormalizePlayerUUID(playerUUID),
+                    usernameAndRank: formattedName.formattedText,
+                })
             })
         })
     }
@@ -753,6 +756,12 @@ export const getTagListKeys = (nbtCompound) => {
         return nbtCompound.func_150296_c/*getKeySet*/()
     }
     return nbtCompound.getKeys()
+}
+export const getTagListEntries = (nbtCompound) => {
+    if (isLegacy) {
+        throw new Error("getTagListEntries is not supported in legacy mode")
+    }
+    return nbtCompound.entrySet()
 }
 export const getStringTagAt = (nbtCompound, index) => {
     if (isLegacy) {
