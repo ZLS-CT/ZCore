@@ -2138,13 +2138,31 @@ export const createCommandLiteral = (commands, subcommandName) => {
             return
         }
 
-        cmd.args.forEach((arg) => {
-            cArgument(arg.name, arg.type(), () => {
+        const firstOptionalIndex = cmd.args.findIndex(arg => arg.optional)
+        const optionalFromIndex = firstOptionalIndex === -1 ? Infinity : firstOptionalIndex
+        const buildArguments = (argIndex) => {
+            if (argIndex >= cmd.args.length) {
                 cExec((context) => {
-                    cmd.handler(context[arg.name])
+                    const argValues = cmd.args.map(arg => context[arg.name])
+                    cmd.handler(...argValues)
                 })
+                return
+            }
+
+            const arg = cmd.args[argIndex]
+            const isOptional = argIndex >= optionalFromIndex
+            cArgument(arg.name, arg.type(), () => {
+                buildArguments(argIndex + 1)
             })
-        })
+
+            if (isOptional) {
+                cExec((context) => {
+                    const argValues = cmd.args.slice(0, argIndex).map(arg => context[arg.name])
+                    cmd.handler(...argValues)
+                })
+            }
+        }
+        buildArguments(0)
     })
 }
 export const createCommandHandler = (commands, subcommand, ...args) => {
