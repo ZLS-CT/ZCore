@@ -307,6 +307,18 @@ export const TitleCase = (newMessage) => {
     return newMessage
 }
 
+export const AlternatingCase = (text, firstCharacterUpperCase = true) => {
+    return text
+        .split('')
+        .map((char, index) => {
+            const shouldBeUpper = firstCharacterUpperCase
+                ? index % 2 == 0
+                : index % 2 != 0
+            return shouldBeUpper ? char.toUpperCase() : char.toLowerCase()
+        })
+        .join('')
+}
+
 export const rarityToColor = (rarity) => {
     switch (rarity) {
         case "COMMON":
