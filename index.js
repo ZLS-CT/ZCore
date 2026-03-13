@@ -18,6 +18,7 @@ const Byte1 = GetJavaClass("java.lang.Byte")
 const ForgeLoader1 = GetJavaClass("net.minecraftforge.fml.loading.FMLLoader")
 const FabricLoader1 = GetJavaClass("net.fabricmc.loader.api.FabricLoader")
 const DataComponentTypes1 = GetJavaClass("net.minecraft.component.DataComponentTypes")
+const NbtComponent1 = GetJavaClass("net.minecraft.component.type.NbtComponent")
 
 const mc = Client.getMinecraft()
 
@@ -868,11 +869,11 @@ export const getItemStackLore = (itemStack, formatted = true) => {
     })
 }
 export const getCustomDataNBT = (item) => {
+    const itemStack = getItemStack(item)
     if (isLegacy) {
-        const itemStack = getItemStack(item)
         return legacyGetOrCreateCustomNBT(itemStack)
     }
-    const customDataComponent = item.get(DataComponentTypes1.CUSTOM_DATA)
+    const customDataComponent = itemStack.get(DataComponentTypes1.CUSTOM_DATA)
 
     if (customDataComponent) {
         return ((gameVersion <= 12108) ?
@@ -880,7 +881,10 @@ export const getCustomDataNBT = (item) => {
             customDataComponent.copyNbt()
         ) || null
     }
-    return NBTComponent.DEFAULT.nbt.copy()
+    return ((gameVersion <= 12108) ?
+        NbtComponent1.DEFAULT.nbt.copy() :
+        NbtComponent1.DEFAULT.copyNbt()
+    ) || null
 }
 
 export const legacyGetOrCreateCustomNBT = (itemStack) => {
