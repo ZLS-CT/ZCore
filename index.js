@@ -21,6 +21,12 @@ const DataComponentTypes1 = GetJavaClass("net.minecraft.component.DataComponentT
 const NbtComponent1 = GetJavaClass("net.minecraft.component.type.NbtComponent")
 
 const mc = Client.getMinecraft()
+const defaultHeaders = {
+    "User-Agent": "Mozilla/5.0 (ChatTriggers)",
+    "Content-Type": "application/json",
+}
+const usernameToUUIDLink = "https://api.mojang.com/users/profiles/minecraft"
+const uuidToUsernameLink = "https://sessionserver.mojang.com/session/minecraft/profile"
 
 export const versionToInt = (version) => ZCoreCore.versionToInt(version)
 export const gameVersionString = ZCoreCore.gameVersionString
@@ -2599,4 +2605,59 @@ export const removeNullMapValues = (obj = {}) => {
         }
     }
     return result
+}
+
+const _GetPlayerAccountData = (playerDataToScan, callback) => {
+    const url = (playerDataToScan.length >= 32) ? uuidToUsernameLink : usernameToUUIDLink
+    fetch(`${url}/${playerDataToScan}`, {
+        headers: defaultHeaders,
+        json: true,
+        timeout: 5000,
+    })
+    .then(playerInfo => {
+        if (isNullOrUndefined(playerInfo)) {
+            callback(false, {
+                isNull: true,
+            })
+            return
+        }
+        if (playerInfo.errorMessage) {
+            callback(false, {
+                isError: true,
+                data: playerInfo,
+            })
+            return
+        }
+        callback(true, {
+            playerUUID: NormalizePlayerUUID(playerInfo["id"]),
+            playerUsername: playerInfo["name"],
+        })
+    })
+    .catch(e => {
+        callback(false, {
+            isException: true,
+            data: e,
+        })
+    })
+}
+export const GetPlayerAccountData = (sourceID, playerDataToScan, callback) => {
+    _GetPlayerAccountData(playerDataToScan, (success, playerData) => {
+        if (!success) {
+            if (playerData.isException) {
+                ChatMessage(`&cError #2 in ${sourceID}: ${playerData.data.message}|${playerData.data.stack}`)
+                return
+            }
+            if (playerData.isError) {
+                ChatMessage(`&cError #3 in ${sourceID}: ${playerData.data.errorMessage}.`)
+                return
+            }
+            if (playerData.isNull) {
+                ChatMessage(`&cError #4 in ${sourceID}: PlayerData is null.`)
+                return
+            }
+            ChatMessage(`&cUnexpected Error #5 in ${sourceID}: ${JSON.stringify(playerData)}.`)
+            return
+        }
+        callback(playerData)
+    })
 }
