@@ -1712,7 +1712,7 @@ register("step", () => {
             try {
                 entry.callback()
             } catch (e) {
-                console.error(`DelayedCallback ${id} failed`, e)
+                ChatDebug(`DelayedCallback ${id} failed`, e, e.stack)
             }
             delete delayedCallbacks[id]
         }
