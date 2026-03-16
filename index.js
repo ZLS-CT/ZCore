@@ -1642,6 +1642,9 @@ export const modernitemIDToRegistryNameMap = {
 }
 
 export const GetModernitemIDRegistryName = (itemID) => {
+    if (Object.values(modernitemIDToRegistryNameMap).includes(itemID)) {
+        return itemID
+    }
     return modernitemIDToRegistryNameMap[itemID] || "minecraft:air"
 }
 
