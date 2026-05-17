@@ -902,6 +902,14 @@ export const legacyGetOrCreateCustomNBT = (itemStack) => {
     return nbt
 }
 
+export const getLeatherArmorColorInt = (itemStack) => {
+    if (isLegacy) {
+        throw new Error("getLeatherArmorColorInt is not supported in legacy mode")
+    }
+    const dyedComponent = itemStack.get(DataComponentTypes1.DYED_COLOR)
+    return (dyedComponent != null) ? dyedComponent.rgb() : null
+}
+
 export const isLeatherArmorType = (itemType) => {
     return leatherArmorNames.has(itemType)
 }
@@ -956,8 +964,7 @@ export const getItemStackNBTObject = (itemStack) => {
     }
 
     if (isLeatherArmor(itemStack)) {
-        dyedColorInt = itemStack.get(DataComponentTypes1.DYED_COLOR)?.rgb()
-        if (isNullOrUndefined(dyedColorInt)) dyedColorInt = null
+        dyedColorInt = getLeatherArmorColorInt(itemStack)
     }
 
     if (itemID != null) finalObject["id"] = itemID
