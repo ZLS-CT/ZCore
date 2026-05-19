@@ -2292,7 +2292,7 @@ export class UpdatingFile {
                 "Content-Type": "application/json"
             },
             json: true,
-            timeout: 5000,
+            timeout: 10000,
         })
         .then(response => {
             if (!response || !response["success"]) {
