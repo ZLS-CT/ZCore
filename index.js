@@ -519,17 +519,19 @@ export const GetServerPlayerList = () => {
             let players = team.func_96670_d/*getMembershipCollection*/()
             players.forEach(player => {
                 let networkPlayerInfo = NetHandlerPlayClient.func_175104_a/*getPlayerInfo*/(player)
-                if (networkPlayerInfo != null) {
-                    let playerMP = new PlayerMP(new net.minecraft.client.entity.EntityOtherPlayerMP(World.getWorld(), networkPlayerInfo.func_178845_a/*getGameProfile*/()))
-                    let formattedName = playerMP.getDisplayName().getText().trim()
-                    let playerUUID = NormalizePlayerUUID(playerMP.getUUID().toString())
+                if (isNullOrUndefined(networkPlayerInfo)) return
 
-                    playerList.push({
-                        playerObject: playerMP,
-                        uuid: playerUUID,
-                        usernameAndRank: formattedName,
-                    })
-                }
+                let playerMP = new PlayerMP(new net.minecraft.client.entity.EntityOtherPlayerMP(World.getWorld(), networkPlayerInfo.func_178845_a/*getGameProfile*/()))
+                if (isNullOrUndefined(playerMP)) return
+
+                let formattedName = playerMP.getDisplayName().getText().trim()
+                let playerUUID = NormalizePlayerUUID(playerMP.getUUID().toString())
+
+                playerList.push({
+                    playerObject: playerMP,
+                    uuid: playerUUID,
+                    usernameAndRank: formattedName,
+                })
             })
         })
         return playerList
@@ -542,7 +544,7 @@ export const GetServerPlayerList = () => {
         let players = team.getPlayerList()
         players.forEach(player => {
             let networkPlayerInfo = NetHandlerPlayClient.getPlayerListEntry(player)
-            if (networkPlayerInfo == null) return
+            if (isNullOrUndefined(networkPlayerInfo)) return
 
             let teamPrefix = new TextComponent(team.getPrefix() || "")
             let teamSuffix = new TextComponent(team.getSuffix() || "")
