@@ -154,8 +154,30 @@ export const ReturnZeroIfNaN = (oldNumber) => {
     return (isNaN(oldNumber)) ? 0 : oldNumber
 }
 
+export const GetCorrectedUnixTimestamp = (timestamp) => {
+    if (isNullOrUndefined(timestamp) || timestamp == 0) return -1
+    const correctedTimestamp = GetCorrectedTimestamp(timestamp)
+    return Math.floor(correctedTimestamp.getTime())
+}
+
+export const GetCorrectedTimestamp = (timestamp) => {
+    if (!isNaN(timestamp)) {
+        return new Date(Number(timestamp))
+    }
+    const shortYearPattern = /^(\d{1,2})\/(\d{1,2})\/(\d{2})\s/
+    if (shortYearPattern.test(timestamp)) {
+        const fixed = timestamp.replace(shortYearPattern, (_, m, d, y) => {
+            const fullYear = 2000 + parseInt(y, 10)
+            return `${m}/${d}/${fullYear} `
+        })
+        return new Date(fixed)
+    }
+
+    return new Date(timestamp)
+}
+
 export const TimestampFormat = (timestamp) => {
-    return DateFormat(new Date(timestamp))
+    return DateFormat(GetCorrectedTimestamp(timestamp))
 }
 // Month Day Hour:Minute PM/AM
 export const DateFormat = (date) => {
