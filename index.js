@@ -6,23 +6,12 @@ export const GetJavaClass = (className) => {
     return Java.type(className)
 }
 
-const FileInputStream1 = GetJavaClass("java.io.FileInputStream")
-const Files1 = GetJavaClass("java.nio.file.Files")
-const File1 = GetJavaClass("java.io.File")
-const FileOutputStream1 = GetJavaClass("java.io.FileOutputStream")
-const Paths1 = GetJavaClass("java.nio.file.Paths")
-const String1 = GetJavaClass("java.lang.String")
-const URL1 = GetJavaClass("java.net.URL")
-const Array1 = GetJavaClass("java.lang.reflect.Array")
-const Byte1 = GetJavaClass("java.lang.Byte")
-const ForgeLoader1 = GetJavaClass("net.minecraftforge.fml.loading.FMLLoader")
-const FabricLoader1 = GetJavaClass("net.fabricmc.loader.api.FabricLoader")
-const DataComponentTypes1 = GetJavaClass("net.minecraft.component.DataComponentTypes")
-const NbtComponent1 = GetJavaClass("net.minecraft.component.type.NbtComponent")
+const JavaString = GetJavaClass("java.lang.String")
+const ForgeLoader = GetJavaClass("net.minecraftforge.fml.loading.FMLLoader")
 
 const mc = Client.getMinecraft()
-const defaultHeaders = {
-    "User-Agent": "Mozilla/5.0 (ChatTriggers)",
+export const defaultHeaders = {
+    "User-Agent": "Mozilla/5.0 (ZJS)",
     "Content-Type": "application/json",
 }
 const usernameToUUIDLink = "https://api.mojang.com/users/profiles/minecraft"
@@ -32,8 +21,10 @@ export const versionToInt = (version) => ZCoreCore.versionToInt(version)
 export const gameVersionString = ZCoreCore.gameVersionString
 export const gameVersion = ZCoreCore.gameVersion
 export const isLegacy = ZCoreCore.isLegacy
-export const modulesFolder = (isLegacy) ? Config.modulesFolder : ChatTriggers.MODULES_FOLDER
-export const modsFolder = (isLegacy) ? `${modulesFolder}../../../mods` : FabricLoader1.getInstance().getGameDir().resolve("mods").toString()
+export const modulesFolder = (isLegacy) ? Config.modulesFolder : ZCoreCore.isZJS ?  ZJS.MODULES_FOLDER_PATH : ChatTriggers.MODULES_FOLDER
+export const modsFolder = (isLegacy) ? `${modulesFolder}../../../mods` : FabricLoader.getInstance().getGameDir().resolve("mods").toString()
+export const isZJS = ZCoreCore.isZJS
+export const isFork = ZCoreCore.isFork
 
 function rejectJavaObjects(key, value) {
     if (value && typeof value == "object" && value.getClass != undefined) {
@@ -131,23 +122,37 @@ export const decimalToRoman = (num) => {
     return result
 }
 
+export const gzipDecompress = (byteArray) => {
+    const input = new ByteArrayInputStream(byteArray)
+    const gz = new GZIPInputStream(input)
+    const out = new ByteArrayOutputStream()
+    const buffer = JavaArray.newInstance(Byte.TYPE, 4096)
+    let n
+    while ((n = gz.read(buffer)) != -1) {
+        out.write(buffer, 0, n)
+    }
+    gz.close()
+    out.close()
+    return new JavaString(out.toByteArray(), "UTF-8")
+}
+
 export const base64Decode = (str, loop = 1) => {
     for (let i = 0; i < loop; i++) {
-        str = new java.lang.String(java.util.Base64.getDecoder().decode(str)).toString()
+        str = new JavaString(Base64.getDecoder().decode(str)).toString()
     }
     return str
 }
 export const base64Encode = (str) => {
-    return java.util.Base64.getEncoder().encodeToString(new java.lang.String(str).getBytes())
+    return Base64.getEncoder().encodeToString(new JavaString(str).getBytes())
 }
 export const numberToByte = (n) => {
     return n > 127 ? n - 256 : n
 }
 export const stringToBytes = (str) => {
-    return new String1(str).getBytes("UTF-8")
+    return new JavaString(str).getBytes("UTF-8")
 }
 export const bytesToString = (bytes, offset, length) => {
-    return new String1(bytes, offset, length, "UTF-8").toString()
+    return new JavaString(bytes, offset, length, "UTF-8").toString()
 }
 
 export const ReturnZeroIfNaN = (oldNumber) => {
@@ -198,13 +203,16 @@ export const getOpenedInventory = () => {
     if (isLegacy) {
         return Player.getPlayer()?.field_71070_bA?.func_85151_d/*getLowerChestInventory*/() || null
     }
-    return Player.getContainer() || null
+    if (isZJS) {
+        return ZPlayer.getContainer() || null
+    }
+    return CTPlayer.getContainer() || null
 }
 export const getOpenedInventoryName = () => {
     if (isLegacy) {
         return Player.getPlayer()?.field_71070_bA?.func_85151_d/*getLowerChestInventory*/()?.func_70005_c_/*getName*/() || null
     }
-    return mc.currentScreen?.title?.getString() || null
+    return Client.currentGui.get()?.title?.getString() || null
 }
 export const getItemStackInSlot = (slot, inventory = null) => {
     if (inventory == null) {
@@ -543,7 +551,7 @@ export const GetServerPlayerList = () => {
                 let networkPlayerInfo = NetHandlerPlayClient.func_175104_a/*getPlayerInfo*/(player)
                 if (isNullOrUndefined(networkPlayerInfo)) return
 
-                let playerMP = new PlayerMP(new net.minecraft.client.entity.EntityOtherPlayerMP(World.getWorld(), networkPlayerInfo.func_178845_a/*getGameProfile*/()))
+                let playerMP = new PlayerMP(new RemotePlayer(World.getWorld(), networkPlayerInfo.func_178845_a/*getGameProfile*/()))
                 if (isNullOrUndefined(playerMP)) return
 
                 let formattedName = playerMP.getDisplayName().getText().trim()
@@ -559,17 +567,17 @@ export const GetServerPlayerList = () => {
         return playerList
     }
     let scoreboard = Scoreboard.getScoreboard()
-    let teams = scoreboard?.getTeams()
+    let teams = scoreboard?.getPlayerTeams()
     if (isNullOrUndefined(teams)) return []
 
     teams.forEach(team => {
-        let players = team.getPlayerList()
+        let players = team.getPlayers()
         players.forEach(player => {
-            let networkPlayerInfo = NetHandlerPlayClient.getPlayerListEntry(player)
+            let networkPlayerInfo = NetHandlerPlayClient.getPlayerInfo(player)
             if (isNullOrUndefined(networkPlayerInfo)) return
 
-            let teamPrefix = new TextComponent(team.getPrefix() || "")
-            let teamSuffix = new TextComponent(team.getSuffix() || "")
+            let teamPrefix = new TextComponent(team.getPlayerPrefix() || "")
+            let teamSuffix = new TextComponent(team.getPlayerSuffix() || "")
             let playerName = ""
             let playerUUID = ""
             if (gameVersion <= 12108) {
@@ -580,7 +588,12 @@ export const GetServerPlayerList = () => {
                 playerUUID = networkPlayerInfo.profile.id().toString()
             }
             let displayName = null
-            let teamColor = team.getColor()
+            let teamColor = ""
+            if (isZJS) {
+                teamColor = new ZTeam(team).getTextColor()
+            } else {
+                teamColor = new CTTeam(team).getTextColor()
+            }
             if (teamColor != null) {
                 displayName = new TextComponent({
                     text: playerName,
@@ -590,7 +603,7 @@ export const GetServerPlayerList = () => {
                 displayName = new TextComponent(playerName)
             }
 
-            let playerMP = new PlayerMP(new net.minecraft.client.network.OtherClientPlayerEntity(World.toMC(), networkPlayerInfo.profile))
+            let playerMP = new PlayerMP(new RemotePlayer(World.toMC(), networkPlayerInfo.profile))
             let formattedName = teamPrefix.withText(displayName).withText(teamSuffix)
 
             playerList.push({
@@ -616,16 +629,16 @@ export const TryReplace = (original, textToReplace, newText, exactOnly = false) 
 }
 
 export const CopyLockedFile = (sourcePathString, destinationPathString) => {
-    const sourcePath = Paths1.get(sourcePathString).normalize()
-    const destinationPath = Paths1.get(destinationPathString).normalize()
+    const sourcePath = Paths.get(sourcePathString).normalize()
+    const destinationPath = Paths.get(destinationPathString).normalize()
 
-    const sourceFile = new File1(sourcePath.toString())
-    const destFile = new File1(destinationPath.toString())
+    const sourceFile = new JavaFile(sourcePath.toString())
+    const destFile = new JavaFile(destinationPath.toString())
 
     try {
-        const fis = new FileInputStream1(sourceFile)
+        const fis = new FileInputStream(sourceFile)
         const sourceChannel = fis.getChannel()
-        const fos = new FileOutputStream1(destFile)
+        const fos = new FileOutputStream(destFile)
         const destChannel = fos.getChannel()
         let  count = 0
         let size = sourceChannel.size()
@@ -642,8 +655,8 @@ export const CopyLockedFile = (sourcePathString, destinationPathString) => {
 }
 
 export const DeleteLockedFile = (filePathString) => {
-    const filePath = Paths1.get(filePathString).normalize()
-    const file = new File1(filePath.toString())
+    const filePath = Paths.get(filePathString).normalize()
+    const file = new JavaFile(filePath.toString())
 
     if (!file.exists()) return true
 
@@ -652,13 +665,13 @@ export const DeleteLockedFile = (filePathString) => {
     if (file.delete()) return true
 
     try {
-        Files1.delete(filePath)
+        Files.delete(filePath)
         return true
     }
     catch (e) { }
 
     try {
-        const fos = new FileOutputStream1(file, true)
+        const fos = new FileOutputStream(file, true)
         fos.close()
     }
     catch (e) { }
@@ -668,28 +681,28 @@ export const DeleteLockedFile = (filePathString) => {
 }
 
 export const CopyFolderRecursive = (source, destination, exclusions = []) => {
-    const sourcePath = Paths1.get(source).normalize()
-    const destinationPath = Paths1.get(destination).normalize()
+    const sourcePath = Paths.get(source).normalize()
+    const destinationPath = Paths.get(destination).normalize()
 
-    if (!Files1.exists(sourcePath)) return
+    if (!Files.exists(sourcePath)) return
 
-    Files1.walk(sourcePath).forEach((file) => {
+    Files.walk(sourcePath).forEach((file) => {
         if (exclusions.some((exclusion) => file.startsWith(exclusion))) return
 
         const relativePath = sourcePath.relativize(file)
         const destFile = destinationPath.resolve(relativePath)
 
-        if (Files1.isDirectory(file)) {
-            Files1.createDirectories(destFile)
+        if (Files.isDirectory(file)) {
+            Files.createDirectories(destFile)
         } else {
-            Files1.copy(file, destFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            Files.copy(file, destFile, StandardCopyOption.REPLACE_EXISTING)
         }
     })
 }
 
 export const DeleteFolderRecursive = (folderPathString) => {
-    const folderPath = Paths1.get(folderPathString).normalize()
-    const folder = new File1(folderPath.toString())
+    const folderPath = Paths.get(folderPathString).normalize()
+    const folder = new JavaFile(folderPath.toString())
 
     if (folder.exists()) {
         folder.listFiles().forEach((file) => {
@@ -798,7 +811,7 @@ export const getTagListKeys = (nbtCompound) => {
     if (isLegacy) {
         return nbtCompound.func_150296_c/*getKeySet*/()
     }
-    return nbtCompound.getKeys()
+    return nbtCompound.keySet()
 }
 export const getTagListEntries = (nbtCompound) => {
     if (isLegacy) {
@@ -866,7 +879,7 @@ export const getItemStackName = (itemStack, formatted = true) => {
         let name = itemStack.func_82833_r/*getDisplayName*/()
         return (formatted) ? name : ChatLib.removeFormatting(name).toLowerCase()
     }
-    let name = new TextComponent(itemStack.getName())
+    let name = new TextComponent(itemStack.getHoverName())
     return (formatted) ? name.formattedText : name.unformattedText.toLowerCase()
 }
 export const setItemStackName = (itemStack, name) => {
@@ -874,7 +887,7 @@ export const setItemStackName = (itemStack, name) => {
         itemStack.func_151001_c/*setStackDisplayName*/(name)
         return
     }
-    itemStack.set(DataComponentTypes1.CUSTOM_NAME, new TextComponent(name))
+    itemStack.set(DataComponents.CUSTOM_NAME, new TextComponent(name))
 }
 export const getItemStackLore = (itemStack, formatted = true) => {
     if (isLegacy) {
@@ -890,7 +903,7 @@ export const getItemStackLore = (itemStack, formatted = true) => {
         }
         return loreLines
     }
-    const loreComponent = itemStack.get(DataComponentTypes1.LORE)
+    const loreComponent = itemStack.get(DataComponents.LORE)
     return new ArrayList(loreComponent?.lines() || []).map(line => {
         if (formatted) {
             return new TextComponent(line).formattedText
@@ -903,17 +916,17 @@ export const getCustomDataNBT = (item) => {
     if (isLegacy) {
         return legacyGetOrCreateCustomNBT(itemStack)
     }
-    const customDataComponent = itemStack.get(DataComponentTypes1.CUSTOM_DATA)
+    const customDataComponent = itemStack.get(DataComponents.CUSTOM_DATA)
 
     if (customDataComponent) {
         return ((gameVersion <= 12108) ?
             customDataComponent.nbt :
-            customDataComponent.copyNbt()
+            customDataComponent.copyTag()
         ) || null
     }
     return ((gameVersion <= 12108) ?
-        NbtComponent1.DEFAULT.nbt.copy() :
-        NbtComponent1.DEFAULT.copyNbt()
+        CustomData.DEFAULT.nbt.copy() :
+        CustomData.EMPTY.copyTag()
     ) || null
 }
 
@@ -930,16 +943,16 @@ export const getLeatherArmorColorInt = (itemStack) => {
     if (isLegacy) {
         throw new Error("getLeatherArmorColorInt is not supported in legacy mode")
     }
-    const dyedComponent = itemStack.get(DataComponentTypes1.DYED_COLOR)
+    const dyedComponent = itemStack.get(DataComponents.DYED_COLOR)
     return (dyedComponent != null) ? dyedComponent.rgb() : null
 }
 
 export const isLeatherArmorType = (itemType) => {
     return leatherArmorNames.has(itemType)
 }
-export const isLeatherArmor = (item) => {
+export const isLeatherArmor = (itemStack) => {
     if (isLegacy) {
-        const itemStack = getItemStack(item)
+        const itemStack = getItemStack(itemStack)
         const registryName = itemStack.func_77973_b().registryName
         return (
             registryName == "minecraft:leather_helmet" ||
@@ -948,11 +961,13 @@ export const isLeatherArmor = (item) => {
             registryName == "minecraft:leather_boots"
         )
     }
+
+    const item = itemStack.getItem()
     return (
-        item.isOf(net.minecraft.item.Items.LEATHER_HELMET) ||
-        item.isOf(net.minecraft.item.Items.LEATHER_CHESTPLATE) ||
-        item.isOf(net.minecraft.item.Items.LEATHER_LEGGINGS) ||
-        item.isOf(net.minecraft.item.Items.LEATHER_BOOTS)
+        item == Items.LEATHER_HELMET ||
+        item == Items.LEATHER_CHESTPLATE ||
+        item == Items.LEATHER_LEGGINGS ||
+        item == Items.LEATHER_BOOTS
     )
 }
 export const getItemStackNBTObject = (itemStack) => {
@@ -971,18 +986,18 @@ export const getItemStackNBTObject = (itemStack) => {
     itemID = getItemStackRegistryName(itemStack)
 
     customNBT = ((gameVersion <= 12108) ?
-        itemStack.get(DataComponentTypes1.CUSTOM_DATA)?.nbt :
-        itemStack.get(DataComponentTypes1.CUSTOM_DATA)?.copyNbt()
+        itemStack.get(DataComponents.CUSTOM_DATA)?.nbt :
+        itemStack.get(DataComponents.CUSTOM_DATA)?.copyTag()
     ) || null
 
-    const loreComponent = itemStack.get(DataComponentTypes1.LORE)
+    const loreComponent = itemStack.get(DataComponents.LORE)
     loreLines = new ArrayList(loreComponent?.lines() || []).map(line => {
         return new TextComponent(line).formattedText
     })
 
-    const customNameComponent = itemStack.get(DataComponentTypes1.CUSTOM_NAME)
+    const customNameComponent = itemStack.get(DataComponents.CUSTOM_NAME)
     if (customNameComponent == null) {
-        itemName = new TextComponent(itemStack.get(DataComponentTypes1.ITEM_NAME)).formattedText
+        itemName = new TextComponent(itemStack.get(DataComponents.ITEM_NAME)).formattedText
     } else {
         itemName = new TextComponent(customNameComponent).formattedText
     }
@@ -1053,44 +1068,44 @@ export const convertNBTToNBTObject = (itemNBT) => {
 
 export const GetValueOfNBTTag = (nbtCompound, key = null) => {
     if (nbtCompound == null) return null
-    if (nbtCompound instanceof net.minecraft.nbt.NbtByteArray) {
-        return nbtCompound.getByteArray()
+    if (nbtCompound instanceof ByteArrayTag) {
+        return nbtCompound.getAsByteArray()
     }
-    if (nbtCompound instanceof net.minecraft.nbt.NbtByte) {
+    if (nbtCompound instanceof ByteTag) {
         return nbtCompound.byteValue()
     }
-    if (nbtCompound instanceof net.minecraft.nbt.NbtCompound) {
+    if (nbtCompound instanceof CompoundTag) {
         const obj = {}
-        nbtCompound.getKeys().toArray().forEach(k => {
+        nbtCompound.keySet().toArray().forEach(k => {
             obj[k] = GetValueOfNBTTag(nbtCompound.get(k))
         })
         return obj
     }
-    if (nbtCompound instanceof net.minecraft.nbt.NbtDouble) {
+    if (nbtCompound instanceof DoubleTag) {
         return nbtCompound.doubleValue()
     }
-    if (nbtCompound instanceof net.minecraft.nbt.NbtFloat) {
+    if (nbtCompound instanceof FloatTag) {
         return nbtCompound.floatValue()
     }
-    if (nbtCompound instanceof net.minecraft.nbt.NbtIntArray) {
-        return nbtCompound.getIntArray()
+    if (nbtCompound instanceof IntArrayTag) {
+        return nbtCompound.getAsIntArray()
     }
-    if (nbtCompound instanceof net.minecraft.nbt.NbtInt) {
+    if (nbtCompound instanceof IntTag) {
         return nbtCompound.intValue()
     }
-    if (nbtCompound instanceof net.minecraft.nbt.NbtLongArray) {
-        return nbtCompound.getLongArray()
+    if (nbtCompound instanceof LongArrayTag) {
+        return nbtCompound.getAsLongArray()
     }
-    if (nbtCompound instanceof net.minecraft.nbt.NbtLong) {
+    if (nbtCompound instanceof LongTag) {
         return nbtCompound.longValue()
     }
-    if (nbtCompound instanceof net.minecraft.nbt.NbtShort) {
+    if (nbtCompound instanceof ShortTag) {
         return nbtCompound.shortValue()
     }
-    if (nbtCompound instanceof net.minecraft.nbt.NbtString) {
+    if (nbtCompound instanceof StringTag) {
         return nbtCompound.value()
     }
-    if (nbtCompound instanceof net.minecraft.nbt.AbstractNbtList) {
+    if (nbtCompound instanceof CollectionTag) {
         const arr = []
         for (let i = 0; i < nbtCompound.size(); i++) {
             arr.push(GetValueOfNBTTag(nbtCompound.get(i)))
@@ -1102,7 +1117,7 @@ export const GetValueOfNBTTag = (nbtCompound, key = null) => {
 export const getReadableNBTDump = (tag) => {
     if (!tag) return {}
     const result = {}
-    tag.getKeys().toArray().forEach(key => {
+    tag.keySet().toArray().forEach(key => {
         const value = GetValueOfNBTTag(tag.get(key), key)
         result[key] = value
     })
@@ -1116,7 +1131,7 @@ export const getItemStack = (item) => {
         }
         return item
     }
-    if (item instanceof com.chattriggers.ctjs.api.inventory.Item) {
+    if (item instanceof com.chattriggers.ctjs.api.inventory.CTItem || item instanceof ZItem) {
         return item.mcValue
     }
     return item
@@ -1699,24 +1714,24 @@ export const FixRenderItemIntoSlotRenderValues = (drawContext, originalItem, x, 
 }
 
 export const moveFile = (target, destination, replace) => {
-    const targetFile = new File1(target)
-    const destinationFile = new File1(destination)
+    const targetFile = new JavaFile(target)
+    const destinationFile = new JavaFile(destination)
     destinationFile.getParentFile().mkdirs()
     return targetFile.renameTo(destinationFile)
 }
 
 export const isModLoaded = (modName) => {
     if (isLegacy) {
-        return ForgeLoader1.isModLoaded(modName)
+        return ForgeLoader.isModLoaded(modName)
     }
-    return FabricLoader1.getInstance().isModLoaded(modName)
+    return FabricLoader.getInstance().isModLoaded(modName)
 }
 export const getInstalledModList = () => {
     if (isLegacy) {
-        return ForgeLoader1.instance().getModList()
+        return ForgeLoader.instance().getModList()
     }
     let modList = []
-    FabricLoader1.getInstance().getAllMods().forEach(mod => {
+    FabricLoader.getInstance().getAllMods().forEach(mod => {
         modList.push(mod.getMetadata().getId())
     })
     return modList
@@ -1725,7 +1740,7 @@ export const getInstalledModVersion = (modID) => {
     if (isLegacy) {
         throw new Error("Not supported in legacy")
     }
-    const modContainer = FabricLoader1.getInstance()
+    const modContainer = FabricLoader.getInstance()
         .getModContainer(modID)
         .orElse(null)
     if (modContainer) {
@@ -2273,17 +2288,17 @@ export class UpdatingFile {
         return this.filePath.replace(/^[/\\]+|[/\\]+$/g, "")
     }
     getOutputFolder() {
-        return java.nio.file.Paths.get(modulesFolder, this.moduleName, this.normalizeFilePath()).toFile()
+        return Paths.get(modulesFolder, this.moduleName, this.normalizeFilePath()).toFile()
     }
     getFullFilePath() {
-        const filePath = java.nio.file.Paths.get(this.getOutputFolder().getAbsolutePath(), this.fileName)
+        const filePath = Paths.get(this.getOutputFolder().getAbsolutePath(), this.fileName)
         return filePath.toString()
     }
 
     readFile() {
         try {
             let filePath = this.getFullFilePath()
-            const file = new File1(filePath)
+            const file = new JavaFile(filePath)
             if (!file.exists()) return null
             return JSON.parse(FileLib.read(filePath))
         } catch (e) {
@@ -2311,10 +2326,7 @@ export class UpdatingFile {
         }
 
         fetch(this.downloadURL, {
-            headers: {
-                "User-Agent": "Mozilla/5.0 (ChatTriggers)",
-                "Content-Type": "application/json"
-            },
+            headers: defaultHeaders,
             json: true,
             timeout: 10000,
         })
@@ -2351,7 +2363,7 @@ export class UpdatingFile {
 
 export const GetTextWithBackgroundData = (textList, colorList) => {
     if (isNullOrUndefined(colorList)) {
-        colorList = [30, 30, 30, 155]
+        colorList = [30, 30, 30, 127]
     }
 
     let longestLength = 0
@@ -2396,7 +2408,7 @@ export const GetTextWithBackgroundData = (textList, colorList) => {
     }
 }
 export const DrawTextWithBackground = (drawContext, text, startX, startY, zOffset, backgroundWidth, backgroundHeight, scale, backgroundColorList) => {
-    ZRenderLib.drawRect(drawContext, startX, startY, backgroundWidth * scale, backgroundHeight * scale, backgroundColorList, zOffset)
+    ZRenderLib.drawRoundedRect(drawContext, startX, startY, backgroundWidth * scale, backgroundHeight * scale, 5, backgroundColorList, [], 16, 0)
     if (isLegacy) {
         ZRenderLib.drawGUIString(drawContext, text, startX + 3.5, startY + 3.5, ZRenderLib.WHITE, scale, false, true, 512, zOffset + 1)
         return
@@ -2534,28 +2546,28 @@ register(renderOverlayTriggerName, (drawContext, partialTicks) => {
 
 export const DownloadFileFromUrl = (fileLink, outputFileName, outputFolder, callback = null) => {
     try {
-        let url = new URL1(fileLink)
+        let url = new JavaURL(fileLink)
         let http = url.openConnection()
         http.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
         let header = http.getHeaderFields()
 
         while (isRedirected(header)) {
             url = header.get("Location").get(0)
-            url = new URL1(url)
+            url = new JavaURL(url)
             http = url.openConnection()
             header = http.getHeaderFields()
         }
 
-        const buffer = Array1.newInstance(Byte1.TYPE, 4096)
+        const buffer = Array.newInstance(Byte.TYPE, 4096)
         const inputStream = http.getInputStream()
-        const folder = new File1(outputFolder)
+        const folder = new JavaFile(outputFolder)
         if (!folder.exists()) {
             folder.mkdirs()
         }
 
         let fileOutputStream = null
         try {
-            fileOutputStream = new FileOutputStream1(outputFolder + "/" + outputFileName)
+            fileOutputStream = new FileOutputStream(outputFolder + "/" + outputFileName)
             let n = -1
             while ((n = inputStream.read(buffer)) != -1) {
                 fileOutputStream.write(buffer, 0, n)
@@ -2591,11 +2603,11 @@ export const GetMatchingFilesInDirectory = (directory, patternFunction) => {
     return matchingFiles
 }
 export const GetAllFilesInDirectory = (directory) => {
-    const dir = Paths1.get(directory)
-    if (!Files1.exists(dir) || !Files1.isDirectory(dir)) return []
+    const dir = Paths.get(directory)
+    if (!Files.exists(dir) || !Files.isDirectory(dir)) return []
 
     const allFiles = []
-    Files1.walk(dir).forEach((path) => {
+    Files.walk(dir).forEach((path) => {
         allFiles.push(path)
     })
 
