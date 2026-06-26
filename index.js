@@ -1916,6 +1916,20 @@ export class ZTextComponent {
         return this
     }
 
+    setClick(clickEvent) {
+        this.textComponentList.forEach(component => {
+            component["clickEvent"] = clickEvent
+        })
+        return this
+    }
+
+    setHover(hoverEvent) {
+        this.textComponentList.forEach(component => {
+            component["hoverEvent"] = hoverEvent
+        })
+        return this
+    }
+
     build(legacyOutputString = true) {
         try {
             if (isLegacy) {
@@ -2397,7 +2411,11 @@ export const GetTextWithBackgroundData = (textList, colorList) => {
             finalTextComponent.withText("\n")
         }
 
-        finalTextComponent.withText(line)
+        if (line instanceof ZTextComponent) {
+            finalTextComponent.withZTextComponent(line)
+        } else {
+            finalTextComponent.withText(line)
+        }
     })
 
     return {
