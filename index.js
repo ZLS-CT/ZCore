@@ -2576,7 +2576,7 @@ export const DownloadFileFromUrl = (fileLink, outputFileName, outputFolder, call
             header = http.getHeaderFields()
         }
 
-        const buffer = Array.newInstance(Byte.TYPE, 4096)
+        const buffer = JavaArray.newInstance(Byte.TYPE, 4096)
         const inputStream = http.getInputStream()
         const folder = new JavaFile(outputFolder)
         if (!folder.exists()) {
