@@ -761,25 +761,38 @@ export const GetClassName = (classObject) => {
     return classObject?.getClass()?.getName() || "ERROR"
 }
 
-export const tryGetTagKey = (nbtCompound, type, key) => {
-    if (tagContainsKey(nbtCompound, key)) {
-        return getTagKey(nbtCompound, type, key)
-    }
-    return null
+export const getCustomNBT = (itemStack) => {
+    return ((gameVersion <= 12108) ?
+        itemStack.get(DataComponents.CUSTOM_DATA)?.nbt :
+        itemStack.get(DataComponents.CUSTOM_DATA)?.copyTag()
+    ) || null
 }
-export const getTagKey = (nbtCompound, type, key) => {
-    if (type == "string") {
-        return getStringTag(nbtCompound, key)
+export const setCustomNBT = (itemStack, nbtData) => {
+    itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(nbtData))
+}
+export const getTag = (nbtCompound, type, key) => {
+    if (type == "byte") {
+        return getByteTag(nbtCompound, key)
+    } else if (type == "short") {
+        return getShortTag(nbtCompound, key)
     } else if (type == "int") {
         return getIntTag(nbtCompound, key)
     } else if (type == "long") {
         return getLongTag(nbtCompound, key)
-    } else if (type == "boolean") {
-        return getBooleanTag(nbtCompound, key)
+    } else if (type == "float") {
+        return getFloatTag(nbtCompound, key)
+    } else if (type == "double") {
+        return getDoubleTag(nbtCompound, key)
+    } else if (type == "string") {
+        return getStringTag(nbtCompound, key)
     } else if (type == "byteArray") {
         return getByteArrayTag(nbtCompound, key)
-    } else if (type == "short") {
-        return getShortTag(nbtCompound, key)
+    } else if (type == "intArray") {
+        return getIntArrayTag(nbtCompound, key)
+    } else if (type == "longArray") {
+        return getLongArrayTag(nbtCompound, key)
+    } else if (type == "boolean") {
+        return getBooleanTag(nbtCompound, key)
     } else if (type == "compoundTag") {
         return getCompoundTagTag(nbtCompound, key)
     }
@@ -830,11 +843,15 @@ export const getCompoundTagAt = (nbtCompound, index) => {
     }
     return nbtCompound.getCompound(index).orElse(null)
 }
-export const getStringTag = (nbtCompound, key) => {
+
+export const getByteTag = (nbtCompound, key) => {
+    return nbtCompound.getByte(key).orElse(null)
+}
+export const getShortTag = (nbtCompound, key) => {
     if (isLegacy) {
-        return nbtCompound.func_74779_i/*getString*/(key)
+        return nbtCompound.func_74765_d/*getShort*/(key)
     }
-    return nbtCompound.getString(key).orElse(null)
+    return nbtCompound.getShort(key).orElse(null)
 }
 export const getIntTag = (nbtCompound, key) => {
     if (isLegacy) {
@@ -848,11 +865,17 @@ export const getLongTag = (nbtCompound, key) => {
     }
     return nbtCompound.getLong(key).orElse(null)
 }
-export const getBooleanTag = (nbtCompound, key) => {
+export const getFloatTag = (nbtCompound, key) => {
+    return nbtCompound.getFloat(key).orElse(null)
+}
+export const getDoubleTag = (nbtCompound, key) => {
+    return nbtCompound.getDouble(key).orElse(null)
+}
+export const getStringTag = (nbtCompound, key) => {
     if (isLegacy) {
-        return nbtCompound.func_74767_n/*getBoolean*/(key)
+        return nbtCompound.func_74779_i/*getString*/(key)
     }
-    return nbtCompound.getBoolean(key).orElse(null)
+    return nbtCompound.getString(key).orElse(null)
 }
 export const getByteArrayTag = (nbtCompound, key) => {
     if (isLegacy) {
@@ -860,17 +883,102 @@ export const getByteArrayTag = (nbtCompound, key) => {
     }
     return nbtCompound.getByteArray(key).orElse(null)
 }
-export const getShortTag = (nbtCompound, key) => {
+export const getIntArrayTag = (nbtCompound, key) => {
+    return nbtCompound.getIntArray(key).orElse(null)
+}
+export const getLongArrayTag = (nbtCompound, key) => {
+    return nbtCompound.getLongArray(key).orElse(null)
+}
+export const getBooleanTag = (nbtCompound, key) => {
     if (isLegacy) {
-        return nbtCompound.func_74765_d/*getShort*/(key)
+        return nbtCompound.func_74767_n/*getBoolean*/(key)
     }
-    return nbtCompound.getShort(key).orElse(null)
+    return nbtCompound.getBoolean(key).orElse(null)
 }
 export const getCompoundTagTag = (nbtCompound, key) => {
     if (isLegacy) {
         return nbtCompound.func_74775_l/*getCompoundTag*/(key)
     }
     return nbtCompound.get(key)
+}
+
+export const setTag = (nbtCompound, type, key, value) => {
+    if (type == "byte") {
+        return setByteTag(nbtCompound, key, value)
+    } else if (type == "short") {
+        return setShortTag(nbtCompound, key, value)
+    } else if (type == "int") {
+        return setIntTag(nbtCompound, key, value)
+    } else if (type == "long") {
+        return setLongTag(nbtCompound, key, value)
+    } else if (type == "float") {
+        return setFloatTag(nbtCompound, key, value)
+    } else if (type == "double") {
+        return setDoubleTag(nbtCompound, key, value)
+    } else if (type == "string") {
+        return setStringTag(nbtCompound, key, value)
+    } else if (type == "byteArray") {
+        return setByteArrayTag(nbtCompound, key, value)
+    } else if (type == "intArray") {
+        return setIntArrayTag(nbtCompound, key, value)
+    } else if (type == "longArray") {
+        return setLongArrayTag(nbtCompound, key, value)
+    } else if (type == "boolean") {
+        return setBooleanTag(nbtCompound, key, value)
+    } else if (type == "compoundTag") {
+        return setCompoundTagTag(nbtCompound, key, value)
+    }
+    return null
+}
+export const setByteTag = (nbtCompound, key, value) => {
+    return nbtCompound.putByte(key, value)
+}
+export const setShortTag = (nbtCompound, key, value) => {
+    return nbtCompound.putShort(key, value)
+}
+export const setIntTag = (nbtCompound, key, value) => {
+    return nbtCompound.putInt(key, value)
+}
+export const setLongTag = (nbtCompound, key, value) => {
+    return nbtCompound.putLong(key, value)
+}
+export const setFloatTag = (nbtCompound, key, value) => {
+    return nbtCompound.putFloat(key, value)
+}
+export const setDoubleTag = (nbtCompound, key, value) => {
+    return nbtCompound.putDouble(key, value)
+}
+export const setStringTag = (nbtCompound, key, value) => {
+    return nbtCompound.putString(key, value)
+}
+export const setByteArrayTag = (nbtCompound, key, value) => {
+    return nbtCompound.putByteArray(key, value)
+}
+export const setIntArrayTag = (nbtCompound, key, value) => {
+    return nbtCompound.putIntArray(key, value)
+}
+export const setLongArrayTag = (nbtCompound, key, value) => {
+    return nbtCompound.putLongArray(key, value)
+}
+export const setBooleanTag = (nbtCompound, key, value) => {
+    return nbtCompound.putBoolean(key, value)
+}
+export const setCompoundTagTag = (nbtCompound, key, value) => {
+    return nbtCompound.put(key, normalizeTag(value))
+}
+
+export const normalizeTag = (value) => {
+    if (value instanceof NBTTagCompound) {
+        return value.mcValue
+    }
+    if (value instanceof net.minecraft.nbt.Tag) {
+        return value
+    }
+    throw new Error(`Invalid tag type: ${typeof value}`)
+}
+
+export const removeTag = (nbtCompound, key) => {
+    return nbtCompound.remove(key)
 }
 
 export const getItemStackName = (itemStack, formatted = true) => {
@@ -1146,18 +1254,20 @@ export const getItemStackRegistryName = (itemStack) => {
     return itemStack.getItem().toString() || "minecraft:air"
 }
 
-export const getCustomNBTKeyFromNBTObject = (itemNBTObject, type, key) => {
+export const getCustomNBTTagFromNBTObject = (itemNBTObject, type, key) => {
     if (!itemNBTObject) return null
-
     if (!itemNBTObject.hasOwnProperty("ExtraAttributes")) return null
     const extraTag = itemNBTObject["ExtraAttributes"]
     if (isNullOrUndefined(extraTag)) return null
 
-    return getTagKey(extraTag, type, key)
+    return getTag(extraTag, type, key)
 }
-export const getCustomNBTKey = (itemStack, type, key) => {
-    const itemNBTObject = getItemStackNBTObject(itemStack)
-    return getCustomNBTKeyFromNBTObject(itemNBTObject, type, key)
+export const getCustomNBTTagFromItemStack = (itemStack, type, key) => {
+    return getCustomNBTTag(getCustomNBT(itemStack), type, key)
+}
+export const getCustomNBTTag = (customData, type, key) => {
+    if (isNullOrUndefined(customData)) return null
+    return getTag(customData, type, key)
 }
 
 export const LegacyGetItemStackFromHoverEvent = (event) => {
