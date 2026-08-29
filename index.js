@@ -576,7 +576,6 @@ export const GetServerPlayerList = () => {
             let networkPlayerInfo = NetHandlerPlayClient.getPlayerInfo(player)
             if (isNullOrUndefined(networkPlayerInfo)) return
 
-            let teamPrefix = new TextComponent(team.getPlayerPrefix() || "")
             let teamSuffix = new TextComponent(team.getPlayerSuffix() || "")
             let playerName = ""
             let playerUUID = ""
@@ -604,7 +603,7 @@ export const GetServerPlayerList = () => {
             }
 
             let playerMP = new PlayerMP(new RemotePlayer(World.toMC(), networkPlayerInfo.profile))
-            let formattedName = teamPrefix.withText(displayName).withText(teamSuffix)
+            let formattedName = new TextComponent("").withText(displayName).withText(teamSuffix)
 
             playerList.push({
                 playerObject: playerMP,
@@ -1007,7 +1006,10 @@ export const getItemStackNBTObject = (itemStack) => {
     }
 
     if (itemID != null) finalObject["id"] = itemID
-    if (customNBT != null) finalObject["ExtraAttributes"] = getReadableNBTDump(customNBT)
+    if (customNBT != null) {
+        finalObject["ExtraAttributes"] = getReadableNBTDump(customNBT)
+        finalObject["RawExtraAttributes"] = customNBT
+    }
     if ((loreLines.length > 0 || dyedColorInt != null || itemName) && !finalObject.hasOwnProperty("display")) finalObject["display"] = {}
     if (loreLines.length > 0) finalObject["display"]["Lore"] = loreLines
     if (itemName) finalObject["display"]["Name"] = itemName
@@ -2438,16 +2440,17 @@ let sortedNotificationKeys = []
 export const RegisterNotification = (notificationKey, textList, options = {}) => {
     const notificationData = {
         textList,
-        durationSeconds: options.durationSeconds || 5,
-        startX: options.startX || 100,
-        startY: options.startY || 100,
-        zOffset: options.zOffset || 0,
-        heightOffset: options.heightOffset || 0,
-        widthOffset: options.widthOffset || 0,
-        scale: options.scale || 1,
-        priority: options.priority || 0,
-        drawFunction: options.drawFunction || null,
-        centered: options.centered || false,
+        durationSeconds: options.durationSeconds ?? 5,
+        startX: options.startX ?? 100,
+        startY: options.startY ?? 100,
+        zOffset: options.zOffset ?? 0,
+        heightOffset: options.heightOffset ?? 0,
+        widthOffset: options.widthOffset ?? 0,
+        scale: options.scale ?? 1,
+        priority: options.priority ?? 0,
+        drawFunction: options.drawFunction ?? null,
+        centered: options.centered ?? false,
+        expirySound: options.expirySound ?? null,
         cachedData: null,
     }
     if (notificationData.durationSeconds != -1) {
