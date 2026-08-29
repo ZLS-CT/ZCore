@@ -2480,8 +2480,10 @@ export const UpdateNotificationData = (notificationKey, newTextList, newOptions 
     registeredNotifications[notificationKey].heightOffset = newOptions.heightOffset || registeredNotifications[notificationKey].heightOffset
     registeredNotifications[notificationKey].widthOffset = newOptions.widthOffset || registeredNotifications[notificationKey].widthOffset
     registeredNotifications[notificationKey].scale = newOptions.scale || registeredNotifications[notificationKey].scale
+    registeredNotifications[notificationKey].priority = newOptions.priority || registeredNotifications[notificationKey].priority
     registeredNotifications[notificationKey].drawFunction = newOptions.drawFunction || registeredNotifications[notificationKey].drawFunction
     registeredNotifications[notificationKey].centered = newOptions.centered || registeredNotifications[notificationKey].centered
+    registeredNotifications[notificationKey].expirySound = newOptions.expirySound || registeredNotifications[notificationKey].expirySound
     registeredNotifications[notificationKey].cachedData = null
     return true
 }
@@ -2505,6 +2507,7 @@ export const SetCachedNotificationData = (notificationKey, notificationData) => 
         scale: notificationData.scale,
         drawFunction: notificationData.drawFunction,
         centered: notificationData.centered,
+        expirySound: notificationData.expirySound,
     }
     registeredNotifications[notificationKey].cachedData = cachedData
     return cachedData
@@ -2519,6 +2522,9 @@ export const TryDrawNotifications = (drawContext, partialTicks) => {
 
         let cachedData = GetCachedNotificationData(notificationKey)
         if (cachedData.endingTime != null && Date.now() >= cachedData.endingTime) {
+            if (cachedData.expirySound) {
+                PlaySound(cachedData.expirySound)
+            }
             delete registeredNotifications[notificationKey]
             needsResort = true
             lastDrawnNotificationKey = null
@@ -2564,6 +2570,21 @@ const renderOverlayTriggerName = isLegacy ? "RenderOverlay" : "RenderHudOverlay"
 register(renderOverlayTriggerName, (drawContext, partialTicks) => {
     TryDrawNotifications(drawContext, partialTicks)
 })
+
+export const PlaySound = (soundName, volume = 1, pitch = 1) => {
+    if (isLegacy) {
+        World.playSound(soundName, volume, pitch)
+        return
+    }
+
+    const soundData = {
+        source: soundName,
+        volume: volume,
+        pitch: pitch,
+    }
+    const sound = (isZJS) ? new ZSound(soundData) : new CTSound(soundData)
+    sound?.play()
+}
 
 export const DownloadFileFromUrl = (fileLink, outputFileName, outputFolder, callback = null) => {
     try {
