@@ -136,6 +136,25 @@ export const gzipDecompress = (byteArray) => {
     return new JavaString(out.toByteArray(), "UTF-8")
 }
 
+export const deflateDecompress = (base64String) => {
+    let compressedBytes = Base64.getDecoder().decode(base64String)
+    let inflater = new Inflater()
+    inflater.setInput(compressedBytes)
+
+    let outStream = new ByteArrayOutputStream(compressedBytes.length * 3)
+    let buffer = JavaArray.newInstance(Byte.TYPE, 4096)
+
+    while (!inflater.finished()) {
+        let count = inflater.inflate(buffer)
+        if (count == 0 && inflater.needsInput()) {
+            break
+        }
+        outStream.write(buffer, 0, count)
+    }
+    inflater.end()
+    return JSON.parse(new JavaString(outStream.toByteArray(), "UTF-8").toString())
+}
+
 export const base64Decode = (str, loop = 1) => {
     for (let i = 0; i < loop; i++) {
         str = new JavaString(Base64.getDecoder().decode(str)).toString()
@@ -1935,7 +1954,7 @@ export class ZTextComponent {
             const first = this.textComponentList[0]
             const text = first.text || (first instanceof TextComponent ? first.getText() : "")
 
-            if (!(text == null || text.trim() === "")) break
+            if (!(text == null || text.trim() == "")) break
             this.textComponentList.shift()
         }
 
@@ -2355,7 +2374,7 @@ export const createCommandLiteral = (commands, subcommandName) => {
         }
 
         const firstOptionalIndex = cmd.args.findIndex(arg => arg.optional)
-        const optionalFromIndex = firstOptionalIndex === -1 ? Infinity : firstOptionalIndex
+        const optionalFromIndex = firstOptionalIndex == -1 ? Infinity : firstOptionalIndex
         const buildArguments = (argIndex) => {
             if (argIndex >= cmd.args.length) {
                 cExec((context) => {
