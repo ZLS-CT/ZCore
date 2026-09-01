@@ -2823,6 +2823,14 @@ export const removeNullMapValues = (obj = {}) => {
     }
     return result
 }
+export const removeEmptyMapValues = (obj = {}) => {
+    const result = {}
+    for (const key in obj) {
+        if (obj[key] == null || (typeof obj[key] == "object" && Object.keys(obj[key]).length == 0)) continue
+        result[key] = obj[key]
+    }
+    return result
+}
 
 const _GetPlayerAccountData = (playerDataToScan, callback) => {
     const url = (playerDataToScan.length >= 32) ? uuidToUsernameLink : usernameToUUIDLink
