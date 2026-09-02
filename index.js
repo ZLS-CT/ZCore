@@ -2380,7 +2380,7 @@ export const registerNewCommand = (commandName, legacyBody, modernBody, aliases 
     buildModernCommand(commandName, modernBody, aliases)
 }
 
-let cLiteral, cArgument, cString, cExec, cBool, cInteger, cGreedyString = null
+let cLiteral, cArgument, cString, cExec, cBool, cInteger, cGreedyString, cSuggests = null
 if (!isLegacy) {
     cLiteral = Commands.literal
     cArgument = Commands.argument
@@ -2389,6 +2389,7 @@ if (!isLegacy) {
     cBool = Commands.bool
     cInteger = Commands.integer
     cGreedyString = Commands.greedyString
+    cSuggests = Commands.suggests
 }
 
 export const createCommandLiteral = (commands, subcommandName) => {
@@ -2415,6 +2416,9 @@ export const createCommandLiteral = (commands, subcommandName) => {
             const arg = cmd.args[argIndex]
             const isOptional = argIndex >= optionalFromIndex
             cArgument(arg.name, arg.type(), () => {
+                if (arg.suggests && cSuggests) {
+                    cSuggests((context, builder) => arg.suggests(context, builder))
+                }
                 buildArguments(argIndex + 1)
             })
 
