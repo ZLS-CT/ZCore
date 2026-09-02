@@ -710,32 +710,54 @@ export const CopyFolderRecursive = (source, destination, exclusions = []) => {
 
     if (!Files.exists(sourcePath)) return
 
-    Files.walk(sourcePath).forEach((file) => {
-        if (exclusions.some((exclusion) => file.startsWith(exclusion))) return
-
-        const relativePath = sourcePath.relativize(file)
-        const destFile = destinationPath.resolve(relativePath)
-
-        if (Files.isDirectory(file)) {
-            Files.createDirectories(destFile)
-        } else {
-            Files.copy(file, destFile, StandardCopyOption.REPLACE_EXISTING)
-        }
-    })
+    const fileStream = Files.walk(sourcePath)
+    try {
+        fileStream.forEach((file) => {
+            const relativePath = sourcePath.relativize(file)
+            const destFile = destinationPath.resolve(relativePath)
+            try {
+                if (exclusions.some((exclusion) => file.toString().endsWith(exclusion))) return
+                if (Files.isDirectory(file)) {
+                    Files.createDirectories(destFile)
+                    return
+                }
+                Files.copy(file, destFile, StandardCopyOption.REPLACE_EXISTING)
+            } catch (e) {
+                ChatDebug("§cError in CopyFolderRecursive", e, e.stack)
+            }
+        })
+    } finally {
+        fileStream.close()
+    }
 }
-
 export const DeleteFolderRecursive = (folderPathString) => {
     const folderPath = Paths.get(folderPathString).normalize()
     const folder = new JavaFile(folderPath.toString())
 
-    if (folder.exists()) {
-        folder.listFiles().forEach((file) => {
-            if (file.isDirectory()) {
-                DeleteFolderRecursive(file.getPath())
+    try {
+        if (folder.exists()) {
+            let hasDeferred = false
+            folder.listFiles().forEach((file) => {
+                try {
+                    if (file.isDirectory()) {
+                        const childDeferred = DeleteFolderRecursive(file.getPath())
+                        if (childDeferred) hasDeferred = true
+                    } else if (!file.delete()) {
+                        file.deleteOnExit()
+                        hasDeferred = true
+                    }
+                } catch (e) {
+                    ChatDebug("§cError #1 in DeleteFolderRecursive", e, e.stack)
+                }
+            })
+            if (hasDeferred) {
+                folder.deleteOnExit()
+                return
             }
-            file.delete()
-        })
-        folder.delete()
+            folder.delete()
+        }
+    } catch (e) {
+        ChatDebug("§cError #2 in DeleteFolderRecursive", e, e.stack)
     }
 }
 
