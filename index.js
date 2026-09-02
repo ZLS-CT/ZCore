@@ -22,7 +22,13 @@ export const gameVersionString = ZCoreCore.gameVersionString
 export const gameVersion = ZCoreCore.gameVersion
 export const isLegacy = ZCoreCore.isLegacy
 export const modulesFolder = (isLegacy) ? Config.modulesFolder : ZCoreCore.isZJS ?  ZJS.MODULES_FOLDER_PATH : ChatTriggers.MODULES_FOLDER
-export const modsFolder = (isLegacy) ? `${modulesFolder}../../../mods` : FabricLoader.getInstance().getGameDir().resolve("mods").toString()
+export const modulesFolderPath = modulesFolder.toString()
+export const gameDirectory = (isLegacy) ? `../../../${modulesFolderPath}` : FabricLoader.getInstance().getGameDir()
+export const gameDirectoryPath = gameDirectory.toString()
+export const modsFolder = (isLegacy) ? `${gameDirectoryPath}/mods` : gameDirectory.resolve("mods")
+export const modsFolderPath = modsFolder.toString()
+export const configFolder = (isLegacy) ? `${gameDirectory}/config` : FabricLoader.getInstance().getConfigDir()
+export const configFolderPath = configFolder.toString()
 export const isZJS = ZCoreCore.isZJS
 export const isFork = ZCoreCore.isFork
 
