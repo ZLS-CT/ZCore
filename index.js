@@ -406,11 +406,11 @@ export const rarityToColor = (rarity) => {
 }
 
 export const isOnHypixel = () => {
-    return Server.getIP().includes("hypixel")
+    return Server.getIP().toString().toLowerCase().includes("hypixel")
 }
 export const isOnSkyblock = () => {
-    const scoreBoard = ChatLib.removeFormatting(Scoreboard.getTitle())
-    return isOnHypixel() && (scoreBoard.includes("SKIBLOCK") || scoreBoard.includes("SKYBLOCK"))
+    const scoreBoard = ChatLib.removeFormatting(Scoreboard.getTitle()).toLowerCase()
+    return isOnHypixel() && (scoreBoard.includes("skiblock") || scoreBoard.includes("skyblock"))
 }
 
 const romanValues = {
