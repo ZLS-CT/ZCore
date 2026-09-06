@@ -601,6 +601,7 @@ export const GetServerPlayerList = () => {
             let networkPlayerInfo = NetHandlerPlayClient.getPlayerInfo(player)
             if (isNullOrUndefined(networkPlayerInfo)) return
 
+            let teamPrefix = new TextComponent(team.getPlayerPrefix() || "")
             let teamSuffix = new TextComponent(team.getPlayerSuffix() || "")
             let playerName = ""
             let playerUUID = ""
@@ -628,11 +629,12 @@ export const GetServerPlayerList = () => {
             }
 
             let playerMP = new PlayerMP(new RemotePlayer(World.toMC(), networkPlayerInfo.profile))
-            let formattedName = new TextComponent("").withText(displayName).withText(teamSuffix)
+            let formattedName = teamPrefix.withText(displayName).withText(teamSuffix)
 
             playerList.push({
                 playerObject: playerMP,
                 uuid: NormalizePlayerUUID(playerUUID),
+                username: displayName.unformattedText,
                 usernameAndRank: formattedName.formattedText,
             })
         })
