@@ -42,7 +42,7 @@ if (Object.keys(ForgeVersion).length > 0) {
         .getFriendlyString()
 }
 export const gameVersionString = _gameVersion
-export const gameVersion = versionToInt(_gameVersion)
+export const gameVersion = versionToInt(_gameVersion.replace(/-.*$/, ""))
 export const isLegacy = gameVersion < 12100
 export let isZJS = new ExportableValue(false)
 export let isFork = new ExportableValue(false)
