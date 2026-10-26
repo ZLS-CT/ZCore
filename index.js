@@ -1,5 +1,6 @@
 import * as ZRenderLib from "../ZRenderLib/index"
 import * as ZCoreCore from "./core"
+import * as Mixins from "./mixins"
 import { fetch } from "../ZRequest/fetch"
 
 export const GetJavaClass = (className) => {
@@ -14,14 +15,20 @@ export const defaultHeaders = {
     "User-Agent": "Mozilla/5.0 (ZJS)",
     "Content-Type": "application/json",
 }
+const HYPIXEL_REGEX = /^(?:[\w-]+\.)?(hypixel\.net)$/
 const usernameToUUIDLink = "https://api.mojang.com/users/profiles/minecraft"
 const uuidToUsernameLink = "https://sessionserver.mojang.com/session/minecraft/profile"
+
+let renderItemTooltipTrigger = null
+const zstate = ZCoreCore.jvmObject("zcore.state", () => ({ onHypixel: false, isLoaded: false }))
+const skyblockUUIDCache = ZCoreCore.jvmObject("zcore.skyblockUUIDCache", () => new LRUCacheMap(1024))
+export const regexCache = new LRUCacheMap(512)
 
 export const versionToInt = (version) => ZCoreCore.versionToInt(version)
 export const gameVersionString = ZCoreCore.gameVersionString
 export const gameVersion = ZCoreCore.gameVersion
 export const isLegacy = ZCoreCore.isLegacy
-export const modulesFolder = (isLegacy) ? Config.modulesFolder : ZCoreCore.isZJS ?  ZJS.MODULES_FOLDER_PATH : ChatTriggers.MODULES_FOLDER
+export const modulesFolder = (isLegacy) ? Config.modulesFolder : ZCoreCore.isZJS ? ZJS.MODULES_FOLDER_PATH : ChatTriggers.MODULES_FOLDER
 export const modulesFolderPath = modulesFolder.toString()
 export const gameDirectory = (isLegacy) ? `../../../${modulesFolderPath}` : FabricLoader.getInstance().getGameDir()
 export const gameDirectoryPath = gameDirectory.toString()
@@ -406,7 +413,7 @@ export const rarityToColor = (rarity) => {
 }
 
 export const isOnHypixel = () => {
-    return Server.getIP().toString().toLowerCase().includes("hypixel")
+    return zstate.onHypixel
 }
 export const isOnSkyblock = () => {
     const scoreBoard = ChatLib.removeFormatting(Scoreboard.getTitle()).toLowerCase()
@@ -1020,7 +1027,7 @@ export const normalizeTag = (value) => {
     if (value instanceof NBTTagCompound) {
         return value.mcValue
     }
-    if (value instanceof net.minecraft.nbt.Tag) {
+    if (value instanceof Tag) {
         return value
     }
     throw new Error(`Invalid tag type: ${typeof value}`)
@@ -1910,8 +1917,8 @@ export const getInstalledModVersion = (modID) => {
     return null
 }
 
-const delayedCallbacks = Object.create(null)
-register("step", () => {
+const delayedCallbacks = ZCoreCore.jvmObject("zcore.delayedCallbacks", () => Object.create(null))
+ZCoreCore.registerShared("zcore.delayedCallbacks", "step", () => {
     const now = Date.now()
     for (const id in delayedCallbacks) {
         let entry = delayedCallbacks[id]
@@ -2356,6 +2363,16 @@ export const GetArmorType = (itemName) => {
     return null
 }
 
+export const GetArmorIndex = (armorType) => {
+    switch (armorType) {
+        case "helmet": return 0
+        case "chestplate": return 1
+        case "leggings": return 2
+        case "boots": return 3
+        default: return null
+    }
+}
+
 export const buildModernCommand = (commandName, commandBody, aliases = []) => {
     const commandNode = Commands.buildCommand(commandName, commandBody)
     commandNode.register()
@@ -2512,8 +2529,7 @@ export const DrawTextWithBackground = (drawContext, text, startX, startY, zOffse
     }
     ZRenderLib.drawGUIText(drawContext, text, startX + 3.5, startY + 3.5, ZRenderLib.WHITE, scale, false, true, 512, zOffset + 1)
 }
-const registeredNotifications = {}
-let sortedNotificationKeys = []
+const registeredNotifications = ZCoreCore.jvmObject("zcore.notifications", () => ({ registered: {}, sortedKeys: [], lastDrawn: null }))
 export const RegisterNotification = (notificationKey, textList, options = {}) => {
     const notificationData = {
         textList,
@@ -2535,41 +2551,41 @@ export const RegisterNotification = (notificationKey, textList, options = {}) =>
     } else {
         notificationData.endingTime = null
     }
-    registeredNotifications[notificationKey] = notificationData
-    sortedNotificationKeys = Object.keys(registeredNotifications).sort((a, b) => registeredNotifications[b].priority - registeredNotifications[a].priority)
+    registeredNotifications.registered[notificationKey] = notificationData
+    registeredNotifications.sortedKeys = Object.keys(registeredNotifications.registered).sort((a, b) => registeredNotifications.registered[b].priority - registeredNotifications.registered[a].priority)
 }
 export const IsNotificationRegistered = (notificationKey) => {
-    return !!registeredNotifications[notificationKey]
+    return !!registeredNotifications.registered[notificationKey]
 }
 export const DeleteNotification = (notificationKey) => {
-    if (!registeredNotifications[notificationKey]) return false
-    delete registeredNotifications[notificationKey]
-    sortedNotificationKeys = Object.keys(registeredNotifications).sort((a, b) => registeredNotifications[b].priority - registeredNotifications[a].priority)
+    if (!registeredNotifications.registered[notificationKey]) return false
+    delete registeredNotifications.registered[notificationKey]
+    registeredNotifications.sortedKeys = Object.keys(registeredNotifications.registered).sort((a, b) => registeredNotifications.registered[b].priority - registeredNotifications.registered[a].priority)
     return true
 }
 export const UpdateNotificationData = (notificationKey, newTextList, newOptions = {}) => {
-    if (!registeredNotifications[notificationKey]) return false
-    registeredNotifications[notificationKey].textList = newTextList
-    registeredNotifications[notificationKey].durationSeconds = newOptions.durationSeconds || registeredNotifications[notificationKey].durationSeconds
-    registeredNotifications[notificationKey].startX = newOptions.startX || registeredNotifications[notificationKey].startX
-    registeredNotifications[notificationKey].startY = newOptions.startY || registeredNotifications[notificationKey].startY
-    registeredNotifications[notificationKey].zOffset = newOptions.zOffset || registeredNotifications[notificationKey].zOffset
-    registeredNotifications[notificationKey].heightOffset = newOptions.heightOffset || registeredNotifications[notificationKey].heightOffset
-    registeredNotifications[notificationKey].widthOffset = newOptions.widthOffset || registeredNotifications[notificationKey].widthOffset
-    registeredNotifications[notificationKey].scale = newOptions.scale || registeredNotifications[notificationKey].scale
-    registeredNotifications[notificationKey].priority = newOptions.priority || registeredNotifications[notificationKey].priority
-    registeredNotifications[notificationKey].drawFunction = newOptions.drawFunction || registeredNotifications[notificationKey].drawFunction
-    registeredNotifications[notificationKey].centered = newOptions.centered || registeredNotifications[notificationKey].centered
-    registeredNotifications[notificationKey].expirySound = newOptions.expirySound || registeredNotifications[notificationKey].expirySound
-    registeredNotifications[notificationKey].cachedData = null
+    if (!registeredNotifications.registered[notificationKey]) return false
+    registeredNotifications.registered[notificationKey].textList = newTextList
+    registeredNotifications.registered[notificationKey].durationSeconds = newOptions.durationSeconds || registeredNotifications.registered[notificationKey].durationSeconds
+    registeredNotifications.registered[notificationKey].startX = newOptions.startX || registeredNotifications.registered[notificationKey].startX
+    registeredNotifications.registered[notificationKey].startY = newOptions.startY || registeredNotifications.registered[notificationKey].startY
+    registeredNotifications.registered[notificationKey].zOffset = newOptions.zOffset || registeredNotifications.registered[notificationKey].zOffset
+    registeredNotifications.registered[notificationKey].heightOffset = newOptions.heightOffset || registeredNotifications.registered[notificationKey].heightOffset
+    registeredNotifications.registered[notificationKey].widthOffset = newOptions.widthOffset || registeredNotifications.registered[notificationKey].widthOffset
+    registeredNotifications.registered[notificationKey].scale = newOptions.scale || registeredNotifications.registered[notificationKey].scale
+    registeredNotifications.registered[notificationKey].priority = newOptions.priority || registeredNotifications.registered[notificationKey].priority
+    registeredNotifications.registered[notificationKey].drawFunction = newOptions.drawFunction || registeredNotifications.registered[notificationKey].drawFunction
+    registeredNotifications.registered[notificationKey].centered = newOptions.centered || registeredNotifications.registered[notificationKey].centered
+    registeredNotifications.registered[notificationKey].expirySound = newOptions.expirySound || registeredNotifications.registered[notificationKey].expirySound
+    registeredNotifications.registered[notificationKey].cachedData = null
     return true
 }
 export const GetCachedNotificationData = (notificationKey) => {
-    if (!registeredNotifications[notificationKey]) return null
-    if (!registeredNotifications[notificationKey].cachedData) {
-        return SetCachedNotificationData(notificationKey, registeredNotifications[notificationKey])
+    if (!registeredNotifications.registered[notificationKey]) return null
+    if (!registeredNotifications.registered[notificationKey].cachedData) {
+        return SetCachedNotificationData(notificationKey, registeredNotifications.registered[notificationKey])
     }
-    return registeredNotifications[notificationKey].cachedData
+    return registeredNotifications.registered[notificationKey].cachedData
 }
 export const SetCachedNotificationData = (notificationKey, notificationData) => {
     const textWithBackgroundData = GetTextWithBackgroundData(notificationData.textList)
@@ -2586,15 +2602,14 @@ export const SetCachedNotificationData = (notificationKey, notificationData) => 
         centered: notificationData.centered,
         expirySound: notificationData.expirySound,
     }
-    registeredNotifications[notificationKey].cachedData = cachedData
+    registeredNotifications.registered[notificationKey].cachedData = cachedData
     return cachedData
 }
 
-let lastDrawnNotificationKey = null
 export const TryDrawNotifications = (drawContext, partialTicks) => {
     let needsResort = false
-    sortedNotificationKeys.forEach((notificationKey) => {
-        const notificationData = registeredNotifications[notificationKey]
+    registeredNotifications.sortedKeys.forEach((notificationKey) => {
+        const notificationData = registeredNotifications.registered[notificationKey]
         if (!notificationData) return
 
         let cachedData = GetCachedNotificationData(notificationKey)
@@ -2602,13 +2617,13 @@ export const TryDrawNotifications = (drawContext, partialTicks) => {
             if (cachedData.expirySound) {
                 PlaySound(cachedData.expirySound)
             }
-            delete registeredNotifications[notificationKey]
+            delete registeredNotifications.registered[notificationKey]
             needsResort = true
-            lastDrawnNotificationKey = null
+            registeredNotifications.lastDrawn = null
             return
         }
-        if (lastDrawnNotificationKey && lastDrawnNotificationKey != notificationKey) return
-        lastDrawnNotificationKey = notificationKey
+        if (registeredNotifications.lastDrawn && registeredNotifications.lastDrawn != notificationKey) return
+        registeredNotifications.lastDrawn = notificationKey
 
         if (cachedData.drawFunction) {
             cachedData.drawFunction(drawContext, cachedData)
@@ -2640,11 +2655,11 @@ export const TryDrawNotifications = (drawContext, partialTicks) => {
     })
 
     if (!needsResort) return
-    sortedNotificationKeys = Object.keys(registeredNotifications).sort((a, b) => registeredNotifications[b].priority - registeredNotifications[a].priority)
+    registeredNotifications.sortedKeys = Object.keys(registeredNotifications.registered).sort((a, b) => registeredNotifications.registered[b].priority - registeredNotifications.registered[a].priority)
 }
 
 const renderOverlayTriggerName = isLegacy ? "RenderOverlay" : "RenderHudOverlay"
-register(renderOverlayTriggerName, (drawContext, partialTicks) => {
+ZCoreCore.registerShared("zcore.notifications.overlay", renderOverlayTriggerName, (drawContext, partialTicks) => {
     TryDrawNotifications(drawContext, partialTicks)
 })
 
@@ -2834,3 +2849,99 @@ export const GetPlayerAccountData = (sourceID, playerDataToScan, callback) => {
         callback(playerData)
     })
 }
+
+export const getSkyblockItemUUID = (itemStack) => {
+    let hashCode = `${System.identityHashCode(itemStack)}`
+    if (skyblockUUIDCache.has(hashCode)) {
+        return skyblockUUIDCache.get(hashCode)
+    }
+
+    let itemNBT = getCustomDataNBT(itemStack)
+    let uuid = null
+
+    if (isLegacy) {
+        const extraAttributes = itemNBT.func_74775_l("ExtraAttributes")
+        uuid = extraAttributes ? extraAttributes.func_74779_i("uuid") : null
+    } else {
+        uuid = itemNBT.getString("uuid").orElse(null)
+    }
+
+    if (uuid != null) {
+        skyblockUUIDCache.put(hashCode, uuid)
+    }
+    return uuid
+}
+export const clearSkyblockUUIDCache = () => {
+    skyblockUUIDCache.clear()
+}
+
+ZCoreCore.registerShared("zcore.serverDisconnect", "serverDisconnect", () => { updateOnHypixel() })
+ZCoreCore.registerShared("zcore.serverConnect", "serverConnect", () => {
+    const maxAttempts = 10
+    let attempts = 0
+    new Thread(() => {
+        while (attempts < maxAttempts) {
+            if (Server.getIP() != "") {
+                updateOnHypixel()
+                return
+            }
+            Thread.sleep(25)
+            attempts++
+        }
+    }).start()
+})
+ZCoreCore.registerShared("zcore.worldUnload", "worldUnload", () => { _unload() })
+ZCoreCore.registerShared("zcore.gameUnload", "gameUnload", () => {
+    _unload()
+    zstate.isLoaded = false
+})
+ZCoreCore.registerShared("zcore.gameLoad", "gameLoad", () => {
+    _unload()
+    zstate.isLoaded = true
+})
+function updateOnHypixel() {
+    zstate.onHypixel = HYPIXEL_REGEX.test(Server.getIP())
+}
+
+function _unload() {
+    updateOnHypixel()
+    skyblockUUIDCache.clear()
+}
+export const isLoaded = () => { return zstate.isLoaded }
+
+export const parseRegexString = (input) => {
+    if (regexCache.has(input)) {
+        return regexCache.get(input)
+    }
+
+    const regexParts = input.match(/^\/(.*)\/([a-z]*)$/i)
+    if (!regexParts) throw new Error("Invalid regex format. Use /pattern/flags")
+
+    const [, pattern, flags] = regexParts
+    const regex = new RegExp(pattern, flags)
+    regexCache.put(input, regex)
+
+    return regex
+}
+
+export const createSingletonTrigger = (triggerName) => {
+    return ZCoreCore.jvmCreateOrReuse(`zcore.customTrigger.${triggerName}`, () => createCustomTrigger(triggerName))
+}
+
+function RegisterCustomEvents() {
+    if (isLegacy) return
+
+    renderItemTooltipTrigger = createSingletonTrigger("ZCore:RenderItemTooltip")
+}
+
+function RegisterMixins() {
+    if (isLegacy) return
+    Mixins.setTooltipCallback((itemStack, tooltipList) => {
+        // Prevents mixin from running when modules are unloaded
+        if (!isLoaded()) return
+        renderItemTooltipTrigger.trigger(itemStack, tooltipList)
+    })
+}
+
+RegisterCustomEvents()
+RegisterMixins()
