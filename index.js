@@ -21,8 +21,6 @@ const uuidToUsernameLink = "https://sessionserver.mojang.com/session/minecraft/p
 
 let renderItemTooltipTrigger = null
 const zstate = ZCoreCore.jvmObject("zcore.state", () => ({ onHypixel: false, isLoaded: false }))
-const skyblockUUIDCache = ZCoreCore.jvmObject("zcore.skyblockUUIDCache", () => new LRUCacheMap(1024))
-export const regexCache = new LRUCacheMap(512)
 
 export const versionToInt = (version) => ZCoreCore.versionToInt(version)
 export const gameVersionString = ZCoreCore.gameVersionString
@@ -1288,6 +1286,34 @@ export const getReadableNBTDump = (tag) => {
         result[key] = value
     })
     return result
+}
+export const objectToNBTTag = (v) => {
+    if (v == null) return null
+    if (typeof v == "string") return StringTag.valueOf(v)
+    if (typeof v == "boolean") return ByteTag.valueOf(v ? 1 : 0)
+    if (typeof v == "number") {
+        if (!Number.isInteger(v)) return DoubleTag.valueOf(v)
+        return Math.abs(v) <= 2147483647 ? IntTag.valueOf(v) : LongTag.valueOf(v)
+    }
+    if (Array.isArray(v)) {
+        const list = new ListTag()
+        for (const e of v) {
+            const t = objectToNBTTag(e)
+            if (t) list.add(t)
+        }
+        return list
+    }
+    if (typeof v == "object") {
+        const c = new CompoundTag()
+        for (const k of Object.keys(v)) {
+            const t = objectToNBTTag(v[k])
+            if (t) {
+                c.put(k, t)
+            }
+        }
+        return c
+    }
+    return null
 }
 
 export const getItemStack = (item) => {
@@ -2850,6 +2876,7 @@ export const GetPlayerAccountData = (sourceID, playerDataToScan, callback) => {
     })
 }
 
+const skyblockUUIDCache = ZCoreCore.jvmObject("zcore.skyblockUUIDCache", () => new LRUCacheMap(1024))
 export const getSkyblockItemUUID = (itemStack) => {
     let hashCode = `${System.identityHashCode(itemStack)}`
     if (skyblockUUIDCache.has(hashCode)) {
@@ -2909,6 +2936,7 @@ function _unload() {
 }
 export const isLoaded = () => { return zstate.isLoaded }
 
+export const regexCache = new LRUCacheMap(512)
 export const parseRegexString = (input) => {
     if (regexCache.has(input)) {
         return regexCache.get(input)
@@ -2926,6 +2954,17 @@ export const parseRegexString = (input) => {
 
 export const createSingletonTrigger = (triggerName) => {
     return ZCoreCore.jvmCreateOrReuse(`zcore.customTrigger.${triggerName}`, () => createCustomTrigger(triggerName))
+}
+
+export const GetItemStackHash = (itemStack) => {
+    if (!itemStack) return null
+    let h = itemStack.getItem().hashCode()
+    h = (Math.imul(31, h) + itemStack.getCount()) | 0
+    h = (Math.imul(31, h) + itemStack.getComponents().hashCode()) | 0
+    return h
+}
+export const GetNBTObjectHash = (nbtObject) => {
+    return nbtObject ? System.identityHashCode(nbtObject) : null
 }
 
 function RegisterCustomEvents() {
